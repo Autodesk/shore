@@ -1,107 +1,80 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
+	"strings"
 
-	"github.com/google/go-jsonnet"
-	spingGate "github.com/spinnaker/spin/cmd/gateclient"
+	"github.com/Autodesk/shore/pkg/backend/spinnaker"
+	"github.com/Autodesk/shore/pkg/controller"
+	"github.com/spf13/cobra"
 )
 
-type CodeFile struct {
-	Name string
-	File []byte
+var rootCmd = &cobra.Command{
+	Use:   "shore",
+	Short: "Shore - Pipeline Framework",
+	Long:  "A Pipeline development framework for integrated pipelines.",
+}
+
+var render = &cobra.Command{
+	Use:   "render",
+	Short: "render a pipeline",
+	Long:  "Walk through the `pipelines` directory, renderer the pipelines and output to STDOUT",
+	Run: func(cmd *cobra.Command, args []string) {
+		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
+		res, err := controller.Render()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(strings.Join(res, "\n"))
+	},
+}
+
+var savePipeline = &cobra.Command{
+	Use:   "save",
+	Short: "save the pipelines",
+	Long:  "Walk through the `pipelines` directory, render & save the pipelines",
+	Run: func(cmd *cobra.Command, args []string) {
+		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
+		res, err := controller.Render()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(strings.Join(res, "\n"))
+
+		cli, err := spinnaker.NewClient()
+		for _, pipeline := range res {
+			res, err := cli.SavePipeline(pipeline)
+			runtime.Breakpoint()
+			if err != nil {
+				log.Println(err)
+			}
+
+			log.Println(res)
+		}
+	},
+}
+
+func init() {
+	// TODO: Add global validations to init.
+	// cobra.OnInitialize()
+	rootCmd.AddCommand(render)
+	rootCmd.AddCommand(savePipeline)
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
 
 func main() {
-	path, err := os.Getwd()
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	fmt.Printf("Current path %s\n", path)
-
-	exePath, err := os.Executable()
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	_, filename, _, ok := runtime.Caller(0)
-
-	if ok == true {
-		log.Printf("Caller runtime path %s", filename)
-	}
-
-	fmt.Printf("Executable path %s\n", exePath)
-
-	pipelinesPath := filepath.Join(path, "pipelines")
-	fmt.Printf("pipelines path %s \n", pipelinesPath)
-	files, err := ioutil.ReadDir(pipelinesPath)
-
-	var filesToRender []CodeFile
-
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-
-		if extension := filepath.Ext(f.Name()); extension != ".jsonnet" && extension != ".libsonnet" {
-			continue
-		}
-
-		filePath := fmt.Sprintf("%s/%s", pipelinesPath, f.Name())
-		bytes, err := ioutil.ReadFile(filePath)
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		filesToRender = append(filesToRender, CodeFile{Name: f.Name(), File: bytes})
-	}
-
-	var renderedOutput []string
-	jsonnetVM := jsonnet.MakeVM()
-	// jsonnetVM.Importer(jso)
-
-	for _, jsonnetFile := range filesToRender {
-		jsonRes, err := jsonnetVM.EvaluateSnippet(jsonnetFile.Name, string(jsonnetFile.File))
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		renderedOutput = append(renderedOutput, jsonRes)
-	}
-
-	var pipelineInterface interface{}
-	json.Unmarshal([]byte(renderedOutput[0]), &pipelineInterface)
-
-	// homeDir, _ := os.UserHomeDir()
-	// spinCliConfigPath, _ := GetUserConfig(filepath.Join(homeDir, ".spin", "config"))
-	gateClient, err := spingGate.NewGateClient(nil, "", "", "", true)
-	applications, _, err := gateClient.ApplicationControllerApi.GetAllApplicationsUsingGET(context.Background(), nil)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("%+v\n", applications)
-
-	fmt.Printf("%+v\n", pipelineInterface)
-	res, err := gateClient.PipelineControllerApi.SavePipelineUsingPOST(context.Background(), pipelineInterface, nil)
-
-	if err != nil {
-		log.Printf("%+v\n", res)
-		log.Fatal(err)
-	}
-
-	fmt.Printf("%+v\n", res)
+	Execute()
 }
