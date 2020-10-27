@@ -78,5 +78,5 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	}
 
 	opt := &spingGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts{}
-	return s.PipelineControllerApi.SavePipelineUsingPOST(s.Context, pipelineJSON, opt)
+	return s.PipelineControllerApi.SavePipelineUsingPOST(s.Context, pipeline, opt)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/Autodesk/shore/pkg/backend/spinnaker"
@@ -40,18 +39,21 @@ var savePipeline = &cobra.Command{
 	Long:  "Walk through the `pipelines` directory, render & save the pipelines",
 	Run: func(cmd *cobra.Command, args []string) {
 		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
-		res, err := controller.Render()
+		pipelines, err := controller.Render()
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(strings.Join(res, "\n"))
-
 		cli, err := spinnaker.NewClient()
-		for _, pipeline := range res {
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, pipeline := range pipelines {
 			res, err := cli.SavePipeline(pipeline)
-			runtime.Breakpoint()
+
 			if err != nil {
 				log.Println(err)
 			}
