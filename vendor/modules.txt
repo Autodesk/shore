@@ -50,19 +50,8 @@ github.com/spf13/cobra
 github.com/spf13/pflag
 # github.com/spinnaker/spin v0.4.1-0.20200908154654-3fb77f4ae948
 ## explicit
-github.com/spinnaker/spin/cmd
-github.com/spinnaker/spin/cmd/account
-github.com/spinnaker/spin/cmd/application
-github.com/spinnaker/spin/cmd/assembler
-github.com/spinnaker/spin/cmd/canary
-github.com/spinnaker/spin/cmd/canary/canary-config
 github.com/spinnaker/spin/cmd/gateclient
-github.com/spinnaker/spin/cmd/orca-tasks
 github.com/spinnaker/spin/cmd/output
-github.com/spinnaker/spin/cmd/pipeline
-github.com/spinnaker/spin/cmd/pipeline-template
-github.com/spinnaker/spin/cmd/pipeline/execution
-github.com/spinnaker/spin/cmd/project
 github.com/spinnaker/spin/config
 github.com/spinnaker/spin/config/auth
 github.com/spinnaker/spin/config/auth/basic
@@ -100,7 +89,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/yaml.v2 v2.3.0
 ## explicit
 gopkg.in/yaml.v2
 # k8s.io/client-go v11.0.0+incompatible
