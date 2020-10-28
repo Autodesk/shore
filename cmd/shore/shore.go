@@ -4,12 +4,28 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/Autodesk/shore/pkg/backend/spinnaker"
 	"github.com/Autodesk/shore/pkg/controller"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+func getShoreProjectDir() (string, error) {
+	// Magic variable to allow working shore without actually beign in the path
+	// For dev purposes only!!
+	if isLocal := viper.GetBool("LOCAL"); isLocal == true {
+		projectPath := viper.GetString("SHORE_PROJECT_PATH")
+
+		if projectPath == "" {
+			return "", fmt.Errorf("env variable `SHORE_PROJECT_PATH` is not set")
+		}
+
+		return projectPath, nil
+	}
+
+	return os.Getwd()
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "shore",
@@ -23,13 +39,19 @@ var render = &cobra.Command{
 	Long:  "Walk through the `pipelines` directory, renderer the pipelines and output to STDOUT",
 	Run: func(cmd *cobra.Command, args []string) {
 		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
-		res, err := controller.Render()
+		projectPath, err := getShoreProjectDir()
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println(strings.Join(res, "\n"))
+		res, err := controller.Render(projectPath)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(res)
 	},
 }
 
@@ -39,7 +61,13 @@ var savePipeline = &cobra.Command{
 	Long:  "Walk through the `pipelines` directory, render & save the pipelines",
 	Run: func(cmd *cobra.Command, args []string) {
 		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
-		pipelines, err := controller.Render()
+		projectPath, err := getShoreProjectDir()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		pipeline, err := controller.Render(projectPath)
 
 		if err != nil {
 			log.Fatal(err)
@@ -51,15 +79,13 @@ var savePipeline = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		for _, pipeline := range pipelines {
-			res, err := cli.SavePipeline(pipeline)
+		res, err := cli.SavePipeline(pipeline)
 
-			if err != nil {
-				log.Println(err)
-			}
-
-			log.Println(res)
+		if err != nil {
+			log.Println(err)
 		}
+
+		log.Println(res)
 	},
 }
 
@@ -68,6 +94,8 @@ func init() {
 	// cobra.OnInitialize()
 	rootCmd.AddCommand(render)
 	rootCmd.AddCommand(savePipeline)
+	viper.AutomaticEnv()
+
 }
 
 func Execute() {
