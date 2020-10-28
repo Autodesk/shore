@@ -10,10 +10,12 @@ type Jsonnet struct {
 	VM *jsonnet.VM
 }
 
-func CreateJsonnetRenderer(sharedLibPaths ...string) *Jsonnet {
-	jsonnetVM := jsonnet.MakeVM()
+// NewRenderer - Create new instance of the JSONNET renderer.
+func NewRenderer(sharedLibPaths ...string) *Jsonnet {
 	fileImporter := jsonnet.FileImporter{}
 	fileImporter.JPaths = append(fileImporter.JPaths, sharedLibPaths...)
+
+	jsonnetVM := jsonnet.MakeVM()
 	jsonnetVM.Importer(&fileImporter)
 
 	return &Jsonnet{
