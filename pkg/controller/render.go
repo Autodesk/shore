@@ -18,6 +18,7 @@ type CodeFile struct {
 
 // Render - Using a defined renderer, renders a pipeline.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
+// TODO: Move all JSONNET specific code into the JSONNET rendering library.
 func Render(projectPath string) (string, error) {
 	log.Printf("projectPath path %s \n", projectPath)
 	modFilePath := filepath.Join(projectPath, "go.mod")
