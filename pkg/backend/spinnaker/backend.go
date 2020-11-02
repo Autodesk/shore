@@ -1,6 +1,7 @@
 package spinnaker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,23 +9,48 @@ import (
 	"net/http"
 	"strings"
 
-	spingGate "github.com/spinnaker/spin/cmd/gateclient"
-	spingGateApi "github.com/spinnaker/spin/gateapi"
+	spinGate "github.com/spinnaker/spin/cmd/gateclient"
+	spinGateApi "github.com/spinnaker/spin/gateapi"
 )
 
+// ApplicationControllerApi - Interface wrapper for the Application Controller API
+type ApplicationControllerApi interface {
+	GetPipelineConfigUsingGET(ctx context.Context, application string, pipelineName string) (map[string]interface{}, *http.Response, error)
+}
+
+// PipelineControllerApi - Interface wrapper for the Pipeline Controller API
+type PipelineControllerApi interface {
+	SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error)
+}
+
+// SpinRequester - An interface to wrap `spinGate.GatewayClient` required methods.
+type SpinRequester interface {
+	ChangeBasePath(path string)
+}
+
+// SpinClient - Concrete type requiring all the methods of the specified interfaces.
 type SpinClient struct {
-	spingGate.GatewayClient
+	SpinRequester
+	// *spinGate.GatewayClient
+	ApplicationControllerApi
+	PipelineControllerApi
+	context.Context
 }
 
 // NewClient - Create a new spinnaker client
 func NewClient() (*SpinClient, error) {
-	gateClient, err := spingGate.NewGateClient(nil, "", "", "", true)
+	gateClient, err := spinGate.NewGateClient(nil, "", "", "", true)
 
 	if err != nil {
 		return &SpinClient{}, err
 	}
 
-	return &SpinClient{GatewayClient: *gateClient}, nil
+	return &SpinClient{
+		SpinRequester:            gateClient,
+		ApplicationControllerApi: gateClient.ApplicationControllerApi,
+		PipelineControllerApi:    gateClient.PipelineControllerApi,
+		Context:                  gateClient.Context,
+	}, nil
 }
 
 // SavePipeline - Create or Update a pipeline.
@@ -45,13 +71,13 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	}
 
 	if _, exists := pipeline["application"]; !exists {
-		errorsList = append(errorsList, "Required pipeline key 'application' missing")
+		errorsList = append(errorsList, "required pipeline key 'application' missing")
 		valid = false
 	}
 
 	if template, exists := pipeline["template"]; exists && len(template.(map[string]interface{})) > 0 {
 		if _, exists := pipeline["schema"]; !exists {
-			errorsList = append(errorsList, "Required pipeline key 'schema' missing for templated pipeline")
+			errorsList = append(errorsList, "required pipeline key 'schema' missing for templated pipeline")
 			valid = false
 		}
 		pipeline["type"] = "templatedPipeline"
@@ -77,6 +103,6 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 		return nil, fmt.Errorf("unhandled response %d: %s", queryResp.StatusCode, b)
 	}
 
-	opt := &spingGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts{}
+	opt := &spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts{}
 	return s.PipelineControllerApi.SavePipelineUsingPOST(s.Context, pipeline, opt)
 }
