@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/Autodesk/shore/pkg/backend/spinnaker"
 	"github.com/Autodesk/shore/pkg/controller"
+	"github.com/Autodesk/shore/pkg/fs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -38,7 +38,7 @@ var render = &cobra.Command{
 	Short: "render a pipeline",
 	Long:  "Walk through the `pipelines` directory, renderer the pipelines and output to STDOUT",
 	Run: func(cmd *cobra.Command, args []string) {
-		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
+		// TODO: `getShoreProjectDir()` should be extracted to a shared config and passed to each command
 		projectPath, err := getShoreProjectDir()
 
 		if err != nil {
@@ -60,7 +60,7 @@ var savePipeline = &cobra.Command{
 	Short: "save the pipelines",
 	Long:  "Walk through the `pipelines` directory, render & save the pipelines",
 	Run: func(cmd *cobra.Command, args []string) {
-		// All business logic should be abstracted to business requirement specific functions (AKA controllers or similar)
+		// TODO: `getShoreProjectDir()` should be extracted to a shared config and passed to each command
 		projectPath, err := getShoreProjectDir()
 
 		if err != nil {
@@ -73,13 +73,7 @@ var savePipeline = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		cli, err := spinnaker.NewClient()
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		res, err := cli.SavePipeline(pipeline)
+		res, err := controller.SavePipeline(pipeline)
 
 		if err != nil {
 			log.Println(err)
@@ -92,9 +86,10 @@ var savePipeline = &cobra.Command{
 func init() {
 	// TODO: Add global validations to init.
 	// cobra.OnInitialize()
+	viper.AutomaticEnv()
+	fs.InitFs(fs.OS)
 	rootCmd.AddCommand(render)
 	rootCmd.AddCommand(savePipeline)
-	viper.AutomaticEnv()
 
 }
 

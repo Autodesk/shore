@@ -1,66 +1,25 @@
 package controller
 
 import (
-	"io/ioutil"
-	"log"
-	"path/filepath"
-	"strings"
-
-	"golang.org/x/mod/modfile"
-
 	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 )
 
-type CodeFile struct {
-	Name string
-	File string
-}
-
 // Render - Using a defined renderer, renders a pipeline.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
-// TODO: Move all JSONNET specific code into the JSONNET rendering library.
 func Render(projectPath string) (string, error) {
-	log.Printf("projectPath path %s \n", projectPath)
-	modFilePath := filepath.Join(projectPath, "go.mod")
-	modFileBytes, err := ioutil.ReadFile(modFilePath)
+	// TODO: The renderer should either be DI'ed or imported from a "global" context.
+	// We don't know which renderer the customer may choose to use in the future.
+	renderer, err := jsonnet.NewRenderer(projectPath)
 
 	if err != nil {
 		return "", err
 	}
 
-	modFile, err := modfile.Parse(modFilePath, modFileBytes, nil)
+	pipelineJSON, err := renderer.Render()
 
 	if err != nil {
 		return "", err
 	}
 
-	var sharedLibs []string
-
-	for _, requirement := range modFile.Require {
-		libPath := strings.Split(requirement.Mod.Path, "/")
-		libPathSlice := libPath[0 : len(libPath)-1]
-		libPathStr := strings.Join(libPathSlice, "/")
-
-		fullLibPath := filepath.Join(projectPath, "vendor", libPathStr)
-		sharedLibs = append(sharedLibs, fullLibPath)
-	}
-
-	renderer := jsonnet.NewRenderer(sharedLibs...)
-
-	mainCodeFile := filepath.Join(projectPath, "main.pipeline.jsonnet")
-	codeBytes, err := ioutil.ReadFile(mainCodeFile)
-
-	if err != nil {
-		return "", err
-	}
-
-	jsonnetFile := CodeFile{Name: mainCodeFile, File: string(codeBytes)}
-	// Currently adds the local `sponnet instance` to be available from `sponnet/*.libsonnet`
-	jsonRes, err := renderer.Render(jsonnetFile.Name, jsonnetFile.File)
-
-	if err != nil {
-		return "", err
-	}
-
-	return jsonRes, nil
+	return pipelineJSON, nil
 }
