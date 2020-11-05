@@ -32,10 +32,11 @@ func (s *mockSpinRequester) ChangeBasePath(path string) {}
 func TestSaveSuccess(t *testing.T) {
 	// Given
 	cli := &SpinClient{
-		ApplicationControllerApi: &mockApplicationControllerAPI{},
-		PipelineControllerApi:    &mockPipelineControllerAPI{},
-		SpinRequester:            &mockSpinRequester{},
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
 	}
+
 	// Test
 	res, err := cli.SavePipeline(`{"application": "test", "name": "test"}`)
 
@@ -47,9 +48,9 @@ func TestSaveSuccess(t *testing.T) {
 func TestSaveFailedApplication(t *testing.T) {
 	// Given
 	cli := &SpinClient{
-		ApplicationControllerApi: &mockApplicationControllerAPI{},
-		PipelineControllerApi:    &mockPipelineControllerAPI{},
-		SpinRequester:            &mockSpinRequester{},
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
 	}
 	// Test
 	_, err := cli.SavePipeline(`{"name": "test"}`)
@@ -61,9 +62,9 @@ func TestSaveFailedApplication(t *testing.T) {
 func TestSaveFailedName(t *testing.T) {
 	// Given
 	cli := &SpinClient{
-		ApplicationControllerApi: &mockApplicationControllerAPI{},
-		PipelineControllerApi:    &mockPipelineControllerAPI{},
-		SpinRequester:            &mockSpinRequester{},
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
 	}
 	// Test
 	_, err := cli.SavePipeline(`{"application": "test"}`)
