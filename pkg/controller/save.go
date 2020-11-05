@@ -2,20 +2,32 @@ package controller
 
 import (
 	"log"
-	"net/http"
 
-	"github.com/Autodesk/shore/pkg/backend/spinnaker"
+	"github.com/spf13/cobra"
 )
 
-// Creates a new Client and saves a pipeline.
-func SavePipeline(pipeline string) (*http.Response, error) {
-	// TODO: The backend client (AKA service provider) should either be DI'ed or imported from a "global" context.
-	// We don't know which cli the customer may choose to use in the future.
-	cli, err := spinnaker.NewClient()
+// NewSaveCommand - Using a Project, Renderer & Backend, renders and saves a pipeline.
+// Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
+func NewSaveCommand(d *Dependencies) *cobra.Command {
+	return &cobra.Command{
+		Use:   "save",
+		Short: "save the pipelines",
+		Long:  "Walk through the `pipelines` directory, render & save the pipelines",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			pipeline, err := Render(d)
 
-	if err != nil {
-		log.Fatal(err)
+			if err != nil {
+				return err
+			}
+
+			res, err := d.Backend.SavePipeline(pipeline)
+
+			if err != nil {
+				return err
+			}
+
+			log.Println(res)
+			return nil
+		},
 	}
-
-	return cli.SavePipeline(pipeline)
 }

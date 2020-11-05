@@ -1,9 +1,11 @@
 local pipeline = import 'sponnet/pipeline.libsonnet';
 
-pipeline.Pipeline {
-  "application": "test1test2test3",
-  "name": "test1",
-  "stages": [
-    pipeline.stages.WaitStage {}
-  ],
-}
+function(params) (
+  pipeline.Pipeline {
+    "application": params.application,
+    "name": params.custom_name.a.a.a,
+    "stages": [
+      pipeline.stages.WaitStage {}
+    ],
+  }
+)
