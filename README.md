@@ -1,4 +1,6 @@
-# shore
+# Shore
+
+[![Build Status](https://master-11.***REMOVED***/job/***REMOVED***job/shore/job/master/badge/icon)](https://master-11.***REMOVED***/job/***REMOVED***job/shore/job/master/)
 
 ## Getting started
 
