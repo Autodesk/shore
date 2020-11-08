@@ -34,9 +34,10 @@ func init() {
 
 	rootCmd.AddCommand(controller.NewRenderCommand(commonDependencies))
 	rootCmd.AddCommand(controller.NewSaveCommand(commonDependencies))
+	rootCmd.AddCommand(controller.NewExecCommand(commonDependencies))
 }
 
-func Execute() {
+func execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -44,5 +45,5 @@ func Execute() {
 }
 
 func main() {
-	Execute()
+	execute()
 }

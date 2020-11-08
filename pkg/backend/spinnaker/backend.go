@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
 
+	"github.com/antihax/optional"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 )
@@ -22,7 +22,7 @@ type ApplicationControllerAPI interface {
 // PipelineControllerAPI - Interface wrapper for the Pipeline Controller API
 type PipelineControllerAPI interface {
 	SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error)
-	// InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrId string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error)
+	InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrID string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error)
 }
 
 // SpinClient - Concrete type requiring all the methods of the specified interfaces.
@@ -34,7 +34,7 @@ type SpinClient struct {
 	context.Context
 }
 
-// NewClient - Create a new spinnaker client
+// NewClient - Create a new default spinnaker client
 func NewClient() *SpinClient {
 	return &SpinClient{}
 }
@@ -73,7 +73,7 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	err := json.Unmarshal([]byte(pipelineJSON), &pipeline)
 
 	if err != nil {
-		log.Fatal(err)
+		return &http.Response{}, err
 	}
 
 	if err = s.isValidPipeline(pipeline); err != nil {
@@ -110,23 +110,36 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 // ExecutePipeline - Execute a spinnaker pipeline.
 //
 // Patameters are optional.
-// func (s *SpinClient) ExecutePipeline(application, pipelineName string, parameters ...interface{}) (*http.Response, error) {
-// 	if err := s.initalizeClient(); err != nil {
-// 		return &http.Response{}, err
-// 	}
+func (s *SpinClient) ExecutePipeline(argsJSON string) (*http.Response, error) {
+	var args map[string]interface{}
+	var opts *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts
 
-// 	var opts *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts
+	if err := s.initalizeClient(); err != nil {
+		return &http.Response{}, err
+	}
 
-// 	if len(parameters) > 0 {
-// 		opts = &spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
-// 			Trigger: optional.NewInterface(parameters[0]),
-// 		}
-// 	} else {
-// 		opts = &spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{}
-// 	}
+	err := json.Unmarshal([]byte(argsJSON), &args)
 
-// 	return s.PipelineControllerAPI.InvokePipelineConfigUsingPOST1(s.Context, application, pipelineName, opts)
-// }
+	if err != nil {
+		return &http.Response{}, err
+	}
+
+	if err = s.isArgsValid(args); err != nil {
+		return &http.Response{}, err
+	}
+
+	application := args["application"].(string)
+	pipelineName := args["pipeline"].(string)
+
+	delete(args, "application")
+	delete(args, "pipeline")
+
+	opts = &spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
+		Trigger: optional.NewInterface(args),
+	}
+
+	return s.PipelineControllerAPI.InvokePipelineConfigUsingPOST1(s.Context, application, pipelineName, opts)
+}
 
 func (s *SpinClient) isValidPipeline(pipeline map[string]interface{}) error {
 	var errorsList []string
@@ -137,6 +150,24 @@ func (s *SpinClient) isValidPipeline(pipeline map[string]interface{}) error {
 
 	if _, exists := pipeline["application"]; !exists {
 		errorsList = append(errorsList, "required pipeline key 'application' missing")
+	}
+
+	if len(errorsList) > 0 {
+		return fmt.Errorf(strings.Join(errorsList, "\n"))
+	}
+
+	return nil
+}
+
+func (s *SpinClient) isArgsValid(args map[string]interface{}) error {
+	var errorsList []string
+
+	if _, exists := args["pipeline"]; !exists {
+		errorsList = append(errorsList, "required args key 'pipeline' missing")
+	}
+
+	if _, exists := args["application"]; !exists {
+		errorsList = append(errorsList, "required args key 'application' missing")
 	}
 
 	if len(errorsList) > 0 {
