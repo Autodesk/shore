@@ -3,6 +3,7 @@ cloud.google.com/go/compute/metadata
 # github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 github.com/andreyvit/diff
 # github.com/antihax/optional v1.0.0
+## explicit
 github.com/antihax/optional
 # github.com/armon/go-radix v1.0.0
 github.com/armon/go-radix

@@ -11,8 +11,8 @@ import (
 func NewSaveCommand(d *Dependencies) *cobra.Command {
 	return &cobra.Command{
 		Use:   "save",
-		Short: "save the pipelines",
-		Long:  "Walk through the `pipelines` directory, render & save the pipelines",
+		Short: "save the pipeline",
+		Long:  "Using the main file configured by the renderer save the pipeline (or pipelines)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			pipeline, err := Render(d)
 

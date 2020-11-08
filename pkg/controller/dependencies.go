@@ -6,6 +6,7 @@ import (
 	"github.com/Autodesk/shore/pkg/renderer"
 )
 
+// Dependencies - Shared dependencies all controller MAY require
 type Dependencies struct {
 	Renderer renderer.Renderer
 	Project  project.ProjectOrganizer

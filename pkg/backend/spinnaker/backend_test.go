@@ -25,6 +25,10 @@ func (p *mockPipelineControllerAPI) SavePipelineUsingPOST(ctx context.Context, p
 	return &http.Response{StatusCode: http.StatusOK}, nil
 }
 
+func (p *mockPipelineControllerAPI) InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrID string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error) {
+	return &http.Response{StatusCode: http.StatusOK}, nil
+}
+
 type mockSpinRequester struct{}
 
 func (s *mockSpinRequester) ChangeBasePath(path string) {}
@@ -71,4 +75,62 @@ func TestSaveFailedName(t *testing.T) {
 
 	// Assert
 	assert.EqualError(t, err, "required pipeline key 'name' missing")
+}
+
+func TestExecSuccess(t *testing.T) {
+	// Given
+	cli := &SpinClient{
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
+	}
+
+	// Test
+	res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": 42}}`)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, res.StatusCode, http.StatusOK)
+}
+
+func TestExecFailedApplication(t *testing.T) {
+	// Given
+	cli := &SpinClient{
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
+	}
+	// Test
+	_, err := cli.ExecutePipeline(`{"pipeline": "test"}`)
+
+	// Assert
+	assert.EqualError(t, err, "required args key 'application' missing")
+}
+
+func TestExecFailedName(t *testing.T) {
+	// Given
+	cli := &SpinClient{
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
+	}
+	// Test
+	_, err := cli.ExecutePipeline(`{"application": "test"}`)
+
+	// Assert
+	assert.EqualError(t, err, "required args key 'pipeline' missing")
+}
+
+func TestExecArgsFailing(t *testing.T) {
+	// Given
+	cli := &SpinClient{
+		ApplicationControllerAPI: &mockApplicationControllerAPI{},
+		PipelineControllerAPI:    &mockPipelineControllerAPI{},
+		Context:                  context.Background(),
+	}
+	// Test
+	_, err := cli.ExecutePipeline(`{}`)
+
+	// Assert
+	assert.EqualError(t, err, "required args key 'pipeline' missing\nrequired args key 'application' missing")
 }
