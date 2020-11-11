@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/antihax/optional"
+	jsoniter "github.com/json-iterator/go"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 )
@@ -62,49 +65,56 @@ func (s *SpinClient) initalizeClient() error {
 	return outerErr
 }
 
-// SavePipeline - Create or Update a pipeline.
-func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
+// TODO: We have to implement transaction based saving everywhere - at the moment if something goes off the state is undefined.
+func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, error) {
+	var pipeline map[string]interface{}
+	pipelineID := ""
+
 	if err := s.initalizeClient(); err != nil {
-		return &http.Response{}, err
+		return pipelineID, &http.Response{}, err
 	}
 
-	var pipeline map[string]interface{}
-
-	err := json.Unmarshal([]byte(pipelineJSON), &pipeline)
+	err := jsoniter.Unmarshal([]byte(pipelineJSON), &pipeline)
 
 	if err != nil {
-		return &http.Response{}, err
+		return pipelineID, &http.Response{}, err
 	}
 
 	if err = s.isValidPipeline(pipeline); err != nil {
-		return &http.Response{}, err
-	}
-
-	if template, exists := pipeline["template"]; exists && len(template.(map[string]interface{})) > 0 {
-		if _, exists := pipeline["schema"]; !exists {
-			return &http.Response{}, fmt.Errorf("required pipeline key 'schema' missing for templated pipeline")
-		}
-		pipeline["type"] = "templatedPipeline"
+		return pipelineID, &http.Response{}, err
 	}
 
 	application := pipeline["application"].(string)
 	pipelineName := pipeline["name"].(string)
 
+	if template, exists := pipeline["template"]; exists && len(template.(map[string]interface{})) > 0 {
+		if _, exists := pipeline["schema"]; !exists {
+			return pipelineID, &http.Response{}, fmt.Errorf("required pipeline key 'schema' missing for templated pipeline")
+		}
+		pipeline["type"] = "templatedPipeline"
+	}
+
 	foundPipeline, queryResp, _ := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
 	if queryResp.StatusCode == http.StatusOK {
 		// pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
 		if len(foundPipeline) > 0 {
+			log.Println("Pipeline", foundPipeline["name"], "found with id", foundPipeline["id"], "in application", application)
+
 			pipeline["id"] = foundPipeline["id"].(string)
+			pipelineID = foundPipeline["id"].(string)
 		}
+
 	} else if queryResp.StatusCode == http.StatusNotFound {
 		// pipeline doesn't exists, let's create a new one
+		log.Println("Pipeline", pipelineName, "not found in application", application)
 	} else {
 		b, _ := ioutil.ReadAll(queryResp.Body)
-		return nil, fmt.Errorf("unhandled response %d: %s", queryResp.StatusCode, b)
+		return pipelineID, nil, fmt.Errorf("unhandled response %d: %s", queryResp.StatusCode, b)
 	}
-
 	opt := &spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts{}
-	return s.PipelineControllerAPI.SavePipelineUsingPOST(s.Context, pipeline, opt)
+	res, err := s.PipelineControllerAPI.SavePipelineUsingPOST(s.Context, pipeline, opt)
+
+	return pipelineID, res, err
 }
 
 // ExecutePipeline - Execute a spinnaker pipeline.
@@ -175,4 +185,213 @@ func (s *SpinClient) isArgsValid(args map[string]interface{}) error {
 	}
 
 	return nil
+}
+
+func isValidPipelineApplication(pipeline map[string]interface{}, parentPipelineApp []string) error {
+	if len(parentPipelineApp) > 0 {
+		if parentApplication := parentPipelineApp[0]; pipeline["application"].(string) != parentApplication {
+			return fmt.Errorf("pipeline 'application' key value should match the value of parent pipeline 'application' key")
+		}
+	}
+
+	return nil
+}
+
+func hasValidChildPipelineStages(stages []interface{}, parentPipelineApp []string) (bool, error) {
+	var errorsList []string
+	hasPipelineStages := false
+
+	for _, stage := range stages {
+		if _, exists := stage.(map[string]interface{})["name"]; !exists {
+			errorsList = append(errorsList, "required stage key 'name' missing for stage")
+		}
+
+		// if it is a pipeline stage it has to have "application" key.
+		// Application value should match the one with the parent pipeline's one
+		if _, exists := stage.(map[string]interface{})["pipeline"]; exists {
+			hasPipelineStages = true
+			stageApplication, applicationExists := stage.(map[string]interface{})["application"]
+			if !applicationExists {
+				errorsList = append(errorsList, "required stage key 'application' missing for stage")
+			} else {
+				if len(parentPipelineApp) > 0 {
+					if parentApplication := parentPipelineApp[0]; stageApplication.(string) != parentApplication {
+						errorsList = append(errorsList, "'application' key value of stage of type 'pipeline' should match the one of parent pipeline 'application' value")
+					}
+				}
+			}
+
+		}
+
+		if len(errorsList) > 0 {
+			return hasPipelineStages, fmt.Errorf(strings.Join(errorsList, "\n"))
+		}
+	}
+
+	return hasPipelineStages, nil
+}
+
+// Add ctx support to configure polling parameters
+func (s *SpinClient) pollSpinnakerGetPipelineConfigUsingGET(application string, pipelineName string) (string, *http.Response, error) {
+	var pollingStep int = 10
+	var pollingTimeout int = 61
+
+	for pollingSleep := 1; pollingSleep <= pollingTimeout; pollingSleep += pollingStep {
+		foundPipeline, queryResp, _ := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+
+		if queryResp.StatusCode != http.StatusOK {
+			b, _ := ioutil.ReadAll(queryResp.Body)
+			err := fmt.Errorf("response %d: %s. nested pipeline '%s' wasn't created in application '%s', pipeline Stage will be unbound",
+				queryResp.StatusCode,
+				b,
+				pipelineName,
+				application)
+			return "", queryResp, err
+		}
+
+		if len(foundPipeline) == 0 {
+			log.Println("get pipeline request didn't return a payload, sleeping for", pollingSleep)
+			time.Sleep(time.Duration(pollingSleep))
+			continue
+		}
+
+		log.Println("Pipeline", foundPipeline["name"], "found with id", foundPipeline["id"], "in application", application)
+
+		return foundPipeline["id"].(string), queryResp, nil
+	}
+
+	return "", &http.Response{}, fmt.Errorf("Couldn't get pipeline until hitting timeout")
+}
+
+// A DFS implementation that runs through the pipeline/stages tree.
+// Finds child pipelines and saves them.
+// Each iteration of the stages loop will look for "pipeline" key in each element
+// If it finds one and it is another pipeline it will start another iteration on that pipeline's stages
+// Once a pipeline with no "pipeline" stages is met - it is saved
+// It's pipeline UUID is assigned to the parent pipeline relevant stage's "pipeline" key
+// The parent loop continues until all its stages of type pipeline are updated with pipeline UUIDs and it is saved.
+// Once all loops are closed the most top level pipeline has all all stage's pipelines replaced with UUIDs and it is saved
+func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]interface{}) error {
+	for _, stage := range stages.([]interface{}) {
+		stagePipelineField, exists := stage.(map[string]interface{})["pipeline"]
+		if !exists {
+			continue
+		}
+
+		switch stagePipelineField.(type) {
+		case string:
+			continue
+		}
+
+		childPipeline := stage.(map[string]interface{})["pipeline"].(map[string]interface{})
+
+		if err := s.isValidPipeline(childPipeline); err != nil {
+			return err
+		}
+
+		parentPipelineApplication := []string{pipeline["application"].(string)}
+
+		if err := isValidPipelineApplication(childPipeline, parentPipelineApplication); err != nil {
+			return err
+		}
+
+		childPipelineStages, exists := childPipeline["stages"]
+		if exists {
+
+			hasChildPipelines, err := hasValidChildPipelineStages(childPipelineStages.([]interface{}), parentPipelineApplication)
+			if err != nil {
+				return err
+			}
+
+			// If any of stages is of type pipeline create those pipelines recursively
+			if hasChildPipelines {
+				if err := s.saveNestedPipeline(childPipelineStages, childPipeline); err != nil {
+					return err
+				}
+			}
+		}
+
+		// After we return from recursion we save "this layer" child pipeline
+		childPipelineBytes, err := jsoniter.Marshal(childPipeline)
+		if err != nil {
+			return err
+		}
+
+		pipelineID, res, err := s.savePipeline(string(childPipelineBytes))
+		if err != nil {
+			return err
+		}
+		log.Println(res)
+
+		// Do not try to poll for pipeline ID again if exists already
+		if pipelineID == "" {
+			pipelineID, res, err = s.pollSpinnakerGetPipelineConfigUsingGET(childPipeline["application"].(string), childPipeline["name"].(string))
+			if err != nil {
+				return err
+			}
+			// pipelineID = pipelineID
+
+			log.Println("Created new pipeline with id:", pipelineID)
+			log.Println(res)
+		}
+
+		// And override stage pipeline value with an the id (a UUID String) received from spinnaker pipeline.
+		// maps are updated by reference so the save of the parent pipeline will be updated as well
+		stage.(map[string]interface{})["pipeline"] = pipelineID
+	}
+
+	return nil
+}
+
+// SavePipeline - Creates or Update nested pipelines recursively
+func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
+
+	if err := s.initalizeClient(); err != nil {
+		return &http.Response{}, err
+	}
+
+	var pipeline map[string]interface{}
+
+	err := jsoniter.Unmarshal([]byte(pipelineJSON), &pipeline)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := s.isValidPipeline(pipeline); err != nil {
+		return &http.Response{}, err
+	}
+
+	// Check whether a pipeline has stages list
+	stages, exists := pipeline["stages"]
+
+	if exists {
+		hasChildPipelines, err := hasValidChildPipelineStages(stages.([]interface{}), []string{pipeline["application"].(string)})
+		if err != nil {
+			return &http.Response{}, err
+		}
+
+		// If any of stages is of type pipeline create those pipelines recursively
+		if hasChildPipelines {
+			if err := s.saveNestedPipeline(stages, pipeline); err != nil {
+				return &http.Response{}, err
+			}
+		}
+	}
+
+	pipelineBytes, err := jsoniter.Marshal(pipeline)
+	if err != nil {
+		return &http.Response{}, err
+	}
+
+	pipelineID, res, err := s.savePipeline(string(pipelineBytes))
+	if err != nil {
+		return &http.Response{}, err
+	}
+	if pipelineID != "" {
+		log.Println("Saved already existing pipeline with ID", pipelineID)
+	}
+	log.Println(res)
+
+	return res, nil
 }

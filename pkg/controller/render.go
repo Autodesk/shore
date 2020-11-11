@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ func Render(d *Dependencies) (string, error) {
 
 	renderArgs, err := d.Project.GetRenderArgs()
 
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}
 
