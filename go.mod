@@ -3,7 +3,6 @@ module github.com/Autodesk/shore
 go 1.15
 
 require (
-	github.com/antihax/optional v1.0.0
 	github.com/google/go-jsonnet v0.16.0
 	github.com/json-iterator/go v1.1.10
 	github.com/spf13/afero v1.4.1

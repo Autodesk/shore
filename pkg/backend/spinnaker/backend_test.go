@@ -1,6 +1,7 @@
 package spinnaker
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"testing"
@@ -12,8 +13,14 @@ import (
 type mockApplicationControllerAPI struct{}
 
 func (a *mockApplicationControllerAPI) GetPipelineConfigUsingGET(ctx context.Context, application string, pipelineName string) (map[string]interface{}, *http.Response, error) {
-	res := map[string]interface{}{
-		"id": "1234",
+	var res map[string]interface{}
+
+	if application == "not-exists" {
+		res = map[string]interface{}{}
+	} else {
+		res = map[string]interface{}{
+			"id": "1234",
+		}
 	}
 
 	return res, &http.Response{StatusCode: http.StatusOK}, nil
@@ -37,18 +44,40 @@ func (p *mockPipelineControllerAPI) InvokePipelineConfigUsingPOST1(ctx context.C
 	return &http.Response{StatusCode: http.StatusOK}, nil
 }
 
-type mockSpinRequester struct{}
+type mockCustomSpinCli struct {
+	CustomSpinCLI
+}
 
-func (s *mockSpinRequester) ChangeBasePath(path string) {}
+func (s *mockCustomSpinCli) ExecutePipeline(application, pipelineName string, args *bytes.Buffer) (*ExecutePipelineResponse, *http.Response, error) {
+	return &ExecutePipelineResponse{Ref: "/pipeline/1234"}, &http.Response{StatusCode: http.StatusOK}, nil
+}
 
-func TestInternalSaveSuccessForExistingPipeline(t *testing.T) {
-	// Given
-	cli := &SpinClient{
+func (s *mockCustomSpinCli) PipelineExecutionDetails(refID string, args *bytes.Buffer) (*PipelineExecutionDetailsResponse, *http.Response, error) {
+	return &PipelineExecutionDetailsResponse{
+		Application: "application",
+		Stages: []map[string]interface{}{
+			{
+				"name":   "name",
+				"status": "SUCCEEDED",
+				"outputs": map[string]interface{}{
+					"test": "123",
+				},
+			},
+		},
+		PipelineName: "pipeline",
+	}, &http.Response{StatusCode: http.StatusOK}, nil
+}
+
+var cli = &SpinClient{
+	CustomSpinCLI: &mockCustomSpinCli{},
+	SpinCLI: &SpinCLI{
 		ApplicationControllerAPI: &mockApplicationControllerAPI{},
 		PipelineControllerAPI:    &mockPipelineControllerAPI{},
 		Context:                  context.Background(),
-	}
+	},
+}
 
+func TestInternalSaveSuccessForExistingPipeline(t *testing.T) {
 	// Test
 	pipelineID, res, err := cli.savePipeline(`{"application": "test", "name": "test"}`)
 
@@ -59,15 +88,8 @@ func TestInternalSaveSuccessForExistingPipeline(t *testing.T) {
 }
 
 func TestInternalSaveSuccessForNonExistingPipeline(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPIWithEmptyID{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	// Test
-	pipelineID, res, err := cli.savePipeline(`{"application": "test", "name": "test"}`)
+	pipelineID, res, err := cli.savePipeline(`{"application": "not-exists", "name": "test"}`)
 
 	// Assert
 	assert.Nil(t, err)
@@ -76,12 +98,6 @@ func TestInternalSaveSuccessForNonExistingPipeline(t *testing.T) {
 }
 
 func TestInternalSaveFailedApplication(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
 	// Test
 	_, _, err := cli.savePipeline(`{"name": "test"}`)
 
@@ -90,12 +106,7 @@ func TestInternalSaveFailedApplication(t *testing.T) {
 }
 
 func TestInternalSaveFailedName(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
+
 	// Test
 	_, _, err := cli.savePipeline(`{"application": "test"}`)
 
@@ -104,15 +115,8 @@ func TestInternalSaveFailedName(t *testing.T) {
 }
 
 func TestExecSuccess(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	// Test
-	res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": 42}}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": 42}}`)
 
 	// Assert
 	assert.Nil(t, err)
@@ -120,55 +124,30 @@ func TestExecSuccess(t *testing.T) {
 }
 
 func TestExecFailedApplication(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
 	// Test
-	_, err := cli.ExecutePipeline(`{"pipeline": "test"}`)
+	_, _, err := cli.ExecutePipeline(`{"pipeline": "test"}`)
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'application' missing")
 }
 
 func TestExecFailedName(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
 	// Test
-	_, err := cli.ExecutePipeline(`{"application": "test"}`)
+	_, _, err := cli.ExecutePipeline(`{"application": "test"}`)
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'pipeline' missing")
 }
 
 func TestExecArgsFailing(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
 	// Test
-	_, err := cli.ExecutePipeline(`{}`)
+	_, _, err := cli.ExecutePipeline(`{}`)
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'pipeline' missing\nrequired args key 'application' missing")
 }
 
 func TestSaveSuccess(t *testing.T) {
-	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -226,12 +205,6 @@ func TestSaveSuccess(t *testing.T) {
 
 func TestSaveSimplePipelineSuccess(t *testing.T) {
 	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "test123",
@@ -255,12 +228,6 @@ func TestSaveSimplePipelineSuccess(t *testing.T) {
 
 func TestMissingApplicationFailedSave(t *testing.T) {
 	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -292,12 +259,6 @@ func TestMissingApplicationFailedSave(t *testing.T) {
 
 func TestMissingNameFailedSave(t *testing.T) {
 	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -329,12 +290,6 @@ func TestMissingNameFailedSave(t *testing.T) {
 
 func TestPipelineChildPipelineWrongApplicationFailedSave(t *testing.T) {
 	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -366,12 +321,6 @@ func TestPipelineChildPipelineWrongApplicationFailedSave(t *testing.T) {
 
 func TestPipelineStageMissingApplicationFailedSave(t *testing.T) {
 	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -402,12 +351,6 @@ func TestPipelineStageMissingApplicationFailedSave(t *testing.T) {
 
 func TestPipelineStageWrongApplicationFailedSave(t *testing.T) {
 	// Given
-	cli := &SpinClient{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	}
-
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -435,4 +378,150 @@ func TestPipelineStageWrongApplicationFailedSave(t *testing.T) {
 
 	// Assert
 	assert.EqualError(t, err, "'application' key value of stage of type 'pipeline' should match the one of parent pipeline 'application' value")
+}
+
+func TestTestingRemoteSuccess(t *testing.T) {
+	config := `{
+	"application": "test1test2test3",
+	"pipeline": "abc",
+	"tests": {
+		"Test Success": {
+			"execution_args": {
+				"parameters": {
+				"a": "a"
+				}
+			},
+			"assertions": {
+				"name": {
+					"expected_status": "succeeded",
+					"expected_output": {
+						"test": "123"
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Nil(t, err)
+}
+
+func TestTestingRemoteNoAssertionFailed(t *testing.T) {
+	config := `{
+	"application": "test1test2test3",
+	"pipeline": "abc",
+	"tests": {
+		"Test Success": {
+			"execution_args": {
+				"parameters": {
+				"a": "a"
+				}
+			},
+			"assertions": {
+				"name": {
+					"expected_status": "succeeded",
+					"expected_output": {
+						"test": "1234"
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Error(t, err)
+}
+
+func TestTestingRemoteNoAssertionForStageError(t *testing.T) {
+	config := `{
+	"application": "test1test2test3",
+	"pipeline": "abc",
+	"tests": {
+		"Test Success": {
+			"execution_args": {},
+			"assertions": {}
+		}
+	}
+}
+`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Error(t, err)
+}
+
+func TestTestingRemoteMissingExecArgs(t *testing.T) {
+	config := `{
+	"application": "test1test2test3",
+	"pipeline": "abc",
+	"tests": {
+		"Test Success": {
+			"assertions": {
+				"name": {
+					"expected_status": "succeeded",
+					"expected_output": {
+						"test": "123"
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Nil(t, err)
+}
+
+func TestTestingNoApplicationFailed(t *testing.T) {
+	config := `{
+	"application": "test1test2test3",
+	"tests": {
+		"Test Success": {
+			"assertions": {
+				"name": {
+					"expected_status": "succeeded",
+					"expected_output": {
+						"test": "123"
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Error(t, err)
+}
+
+func TestTestingNoPipelineFailed(t *testing.T) {
+	config := `{
+	"pipeline": "abc",
+	"tests": {
+		"Test Success": {
+			"assertions": {
+				"name": {
+					"expected_status": "succeeded",
+					"expected_output": {
+						"test": "123"
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Error(t, err)
 }
