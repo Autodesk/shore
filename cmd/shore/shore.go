@@ -14,10 +14,11 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "shore",
-	Short:        "Shore - Pipeline Framework",
-	Long:         "A Pipeline development framework for integrated pipelines.",
-	SilenceUsage: true,
+	Use:           "shore",
+	Short:         "Shore - Pipeline Framework",
+	Long:          "A Pipeline development framework for integrated pipelines.",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 func init() {
@@ -35,6 +36,7 @@ func init() {
 	rootCmd.AddCommand(controller.NewRenderCommand(commonDependencies))
 	rootCmd.AddCommand(controller.NewSaveCommand(commonDependencies))
 	rootCmd.AddCommand(controller.NewExecCommand(commonDependencies))
+	rootCmd.AddCommand(controller.NewTestRemoteCommand(commonDependencies))
 }
 
 func execute() {

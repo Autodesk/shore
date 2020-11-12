@@ -35,7 +35,7 @@ func NewExecCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			res, err := d.Backend.ExecutePipeline(execArgs)
+			_, res, err := d.Backend.ExecutePipeline(execArgs)
 
 			if err != nil {
 				return err

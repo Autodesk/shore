@@ -1,8 +1,10 @@
 package spinnaker
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/antihax/optional"
 	jsoniter "github.com/json-iterator/go"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
@@ -25,16 +26,20 @@ type ApplicationControllerAPI interface {
 // PipelineControllerAPI - Interface wrapper for the Pipeline Controller API
 type PipelineControllerAPI interface {
 	SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error)
-	InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrID string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error)
+}
+
+// SpinCLI is a wrapper for the spin-cli gateway client backed by swagger
+type SpinCLI struct {
+	ApplicationControllerAPI
+	PipelineControllerAPI
+	context.Context
 }
 
 // SpinClient - Concrete type requiring all the methods of the specified interfaces.
 type SpinClient struct {
-	// *spinGate.GatewayClient
 	initOnce sync.Once
-	ApplicationControllerAPI
-	PipelineControllerAPI
-	context.Context
+	*SpinCLI
+	CustomSpinCLI
 }
 
 // NewClient - Create a new default spinnaker client
@@ -42,12 +47,12 @@ func NewClient() *SpinClient {
 	return &SpinClient{}
 }
 
-// initalizeClient - Lazy initialization of the client, is expected to be called before each method that requires http.
+// initalizeAPI - Lazy initialization of the client, is expected to be called before each method that requires http.
 // Concept taken from: https://roberto.selbach.ca/zero-values-in-go-and-lazy-initialization/
-func (s *SpinClient) initalizeClient() error {
+func (s *SpinClient) initalizeAPI() error {
 	var outerErr error
 	// If the client is already initialized, not
-	if s.ApplicationControllerAPI == nil && s.PipelineControllerAPI == nil && s.Context == nil {
+	if s.SpinCLI == nil && s.CustomSpinCLI == nil {
 		s.initOnce.Do(func() {
 			gateClient, err := spinGate.NewGateClient(&UI{}, "", "", "", true)
 
@@ -56,9 +61,21 @@ func (s *SpinClient) initalizeClient() error {
 				return
 			}
 
-			s.ApplicationControllerAPI = gateClient.ApplicationControllerApi
-			s.PipelineControllerAPI = gateClient.PipelineControllerApi
-			s.Context = gateClient.Context
+			// `InitializeHTTPClient` is an internal Spinnaker function that takes the auth config from a `.config` file used by spin-cli.
+			// The returned `httpClient` is already configured to use `LDAP/OAuth2/Certificates` and the other authentication methods provided by spinnaker.
+			httpClient, err := spinGate.InitializeHTTPClient(gateClient.Config.Auth)
+
+			if err != nil {
+				outerErr = err
+				return
+			}
+
+			s.CustomSpinCLI = &CustomSpinClient{Endpoint: gateClient.Config.Gate.Endpoint, HTTPClient: *httpClient}
+			s.SpinCLI = &SpinCLI{
+				ApplicationControllerAPI: gateClient.ApplicationControllerApi,
+				PipelineControllerAPI:    gateClient.PipelineControllerApi,
+				Context:                  gateClient.Context,
+			}
 		})
 	}
 
@@ -70,7 +87,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 	var pipeline map[string]interface{}
 	pipelineID := ""
 
-	if err := s.initalizeClient(); err != nil {
+	if err := s.initalizeAPI(); err != nil {
 		return pipelineID, &http.Response{}, err
 	}
 
@@ -120,22 +137,26 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 // ExecutePipeline - Execute a spinnaker pipeline.
 //
 // Patameters are optional.
-func (s *SpinClient) ExecutePipeline(argsJSON string) (*http.Response, error) {
-	var args map[string]interface{}
-	var opts *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts
+func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Response, error) {
+	// For some crazy reason, spicli invoke doesn't return the ID of the pipeline execution.
+	// BTW the crazy reason is that `swagger-code-gen` produces wrong code and Spin-Cli (and shore...) depends on this wrong code.
+	// So this request needs to be done 100% manually.
+	// For this reason we use the `CustomSpinCLI` interface to implement all the things `SpinCli` either does wrong, or is 100% broken.
 
-	if err := s.initalizeClient(); err != nil {
-		return &http.Response{}, err
+	var args map[string]interface{}
+
+	if err := s.initalizeAPI(); err != nil {
+		return &ExecutePipelineResponse{}, &http.Response{}, err
 	}
 
 	err := json.Unmarshal([]byte(argsJSON), &args)
 
 	if err != nil {
-		return &http.Response{}, err
+		return &ExecutePipelineResponse{}, &http.Response{}, err
 	}
 
 	if err = s.isArgsValid(args); err != nil {
-		return &http.Response{}, err
+		return &ExecutePipelineResponse{}, &http.Response{}, err
 	}
 
 	application := args["application"].(string)
@@ -144,11 +165,119 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (*http.Response, error) {
 	delete(args, "application")
 	delete(args, "pipeline")
 
-	opts = &spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts{
-		Trigger: optional.NewInterface(args),
+	argsBytes, err := json.Marshal(args)
+
+	if err != nil {
+		return &ExecutePipelineResponse{}, &http.Response{}, err
 	}
 
-	return s.PipelineControllerAPI.InvokePipelineConfigUsingPOST1(s.Context, application, pipelineName, opts)
+	body, res, err := s.CustomSpinCLI.ExecutePipeline(application, pipelineName, bytes.NewBuffer(argsBytes))
+	return body, res, err
+}
+
+// TestPipeline - Run a Spinnaker testing
+// Currently returns a not-so-well formatted error.
+// The indended solution is to create a shared API between `shore-cli` & the `backend` to expect well formatted struct for the CLI to render correctly.
+// TODO: Design a struct to pass data back to `shore-cli` so the UI layer could render the test-results correctly.
+func (s *SpinClient) TestPipeline(config string, onChange func()) error {
+	var testConfig TestsConfig
+
+	if err := jsoniter.Unmarshal([]byte(config), &testConfig); err != nil {
+		return err
+	}
+
+	if err := s.initalizeAPI(); err != nil {
+		return err
+	}
+
+	if testConfig.Application == "" {
+		return fmt.Errorf("test config missing required property `application`")
+	}
+
+	if testConfig.Pipeline == "" {
+		return fmt.Errorf("test config missing required property `pipeline`")
+	}
+
+	testErrors := make(map[string][]string)
+
+	for testName, test := range testConfig.Tests {
+		execArgs, err := json.Marshal(test.ExecArgs)
+
+		if err != nil {
+			return err
+		}
+
+		body, _, err := s.CustomSpinCLI.ExecutePipeline(testConfig.Application, testConfig.Pipeline, bytes.NewBuffer(execArgs))
+
+		if err != nil {
+			testErrors[testName] = append(testErrors[testName], err.Error())
+		}
+
+		refID := strings.Split(body.Ref, "/")[2]
+
+		var execDetails *PipelineExecutionDetailsResponse
+
+		execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
+
+		// Currently waiting for roughly 20 minutes before exiting the loop
+		// TODO: Make this value configurable
+		maxTries := 50
+		tries := 0
+
+		for execDetails.Status == PipelineRunning && tries < maxTries {
+			execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
+			tries++
+			time.Sleep(time.Second * time.Duration(tries))
+		}
+
+		if tries == maxTries {
+			testErrors[testName] = append(testErrors[testName], fmt.Sprintf("max timed out reached for test: '%s'", testName))
+			continue
+		}
+
+		if err != nil {
+			testErrors[testName] = append(testErrors[testName], err.Error())
+		}
+
+		for _, stage := range execDetails.Stages {
+			stageName := stage["name"].(string)
+			assetion, exists := test.Assertions[stageName]
+
+			if !exists {
+				testErrors[testName] = append(testErrors[testName], fmt.Sprintf("missing assertion for stage %s", stageName))
+				continue
+			}
+
+			expectedStatus := strings.ToUpper(assetion.ExpectedStatus)
+
+			if err := isExpectedStatus(expectedStatus, stage["status"].(string), stageName); err != nil {
+				testErrors[testName] = append(testErrors[testName], err.Error())
+			}
+
+			if err := isExpectedOutput(assetion.ExpectedOutput, stage["outputs"].(map[string]interface{}), stageName); err != nil {
+				testErrors[testName] = append(testErrors[testName], err.Error())
+			}
+		}
+	}
+
+	// This should really be handled by a Golang template.
+	// TODO: move this logic to the CLI layer.
+	if len(testErrors) > 0 {
+		formmatedErrors := ""
+
+		for testName, testErrors := range testErrors {
+			formmatedErrors += fmt.Sprintf("`%s` failure:\n", testName)
+			for _, testError := range testErrors {
+				formmatedErrors += fmt.Sprintf("%s\n", testError)
+			}
+			formmatedErrors += "\n"
+		}
+
+		// TODO: The backend shouldn't concern itself with rendering, this should be replaced with the correct struct response.
+		return errors.New(formmatedErrors)
+	}
+
+	return nil
 }
 
 func (s *SpinClient) isValidPipeline(pipeline map[string]interface{}) error {
@@ -346,7 +475,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 // SavePipeline - Creates or Update nested pipelines recursively
 func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 
-	if err := s.initalizeClient(); err != nil {
+	if err := s.initalizeAPI(); err != nil {
 		return &http.Response{}, err
 	}
 
