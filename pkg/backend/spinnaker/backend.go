@@ -7,13 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	log "github.com/sirupsen/logrus"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 )
@@ -40,16 +40,17 @@ type SpinClient struct {
 	initOnce sync.Once
 	*SpinCLI
 	CustomSpinCLI
+	log *log.Logger
 }
 
 // NewClient - Create a new default spinnaker client
-func NewClient() *SpinClient {
-	return &SpinClient{}
+func NewClient(logger *log.Logger) *SpinClient {
+	return &SpinClient{log: logger}
 }
 
-// initalizeAPI - Lazy initialization of the client, is expected to be called before each method that requires http.
+// initializeAPI - Lazy initialization of the client, is expected to be called before each method that requires http.
 // Concept taken from: https://roberto.selbach.ca/zero-values-in-go-and-lazy-initialization/
-func (s *SpinClient) initalizeAPI() error {
+func (s *SpinClient) initializeAPI() error {
 	var outerErr error
 	// If the client is already initialized, not
 	if s.SpinCLI == nil && s.CustomSpinCLI == nil {
@@ -87,7 +88,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 	var pipeline map[string]interface{}
 	pipelineID := ""
 
-	if err := s.initalizeAPI(); err != nil {
+	if err := s.initializeAPI(); err != nil {
 		return pipelineID, &http.Response{}, err
 	}
 
@@ -115,7 +116,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 	if queryResp.StatusCode == http.StatusOK {
 		// pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
 		if len(foundPipeline) > 0 {
-			log.Println("Pipeline", foundPipeline["name"], "found with id", foundPipeline["id"], "in application", application)
+			s.log.Info("Pipeline ", foundPipeline["name"], " found with id ", foundPipeline["id"], " in application ", application)
 
 			pipeline["id"] = foundPipeline["id"].(string)
 			pipelineID = foundPipeline["id"].(string)
@@ -123,7 +124,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 
 	} else if queryResp.StatusCode == http.StatusNotFound {
 		// pipeline doesn't exists, let's create a new one
-		log.Println("Pipeline", pipelineName, "not found in application", application)
+		s.log.Info("Pipeline ", pipelineName, "not found in application ", application)
 	} else {
 		b, _ := ioutil.ReadAll(queryResp.Body)
 		return pipelineID, nil, fmt.Errorf("unhandled response %d: %s", queryResp.StatusCode, b)
@@ -145,7 +146,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 
 	var args map[string]interface{}
 
-	if err := s.initalizeAPI(); err != nil {
+	if err := s.initializeAPI(); err != nil {
 		return &ExecutePipelineResponse{}, &http.Response{}, err
 	}
 
@@ -186,7 +187,7 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 		return err
 	}
 
-	if err := s.initalizeAPI(); err != nil {
+	if err := s.initializeAPI(); err != nil {
 		return err
 	}
 
@@ -475,7 +476,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 // SavePipeline - Creates or Update nested pipelines recursively
 func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 
-	if err := s.initalizeAPI(); err != nil {
+	if err := s.initializeAPI(); err != nil {
 		return &http.Response{}, err
 	}
 
@@ -517,10 +518,10 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	if err != nil {
 		return &http.Response{}, err
 	}
+
 	if pipelineID != "" {
-		log.Println("Saved already existing pipeline with ID", pipelineID)
+		s.log.Info("Saved already existing pipeline with ID", pipelineID)
 	}
-	log.Println(res)
 
 	return res, nil
 }

@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/google/go-jsonnet v0.16.0
 	github.com/json-iterator/go v1.1.10
+	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.4.1
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/viper v1.7.1

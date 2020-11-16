@@ -29,24 +29,38 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 
 // Render - Using a Project & Renderer, renders the pipeline.
 func Render(d *Dependencies) (string, error) {
-	// TODO: For future devx, aggregate errors and return them together.
+	// TODO: For future DevX, aggregate errors and return them together.
+	d.Logger.Info("Render function started")
+
+	d.Logger.Debug("GetProjectPath")
 	projectPath, err := d.Project.GetProjectPath()
 
 	if err != nil {
+		d.Logger.Error("GetProjectPath returned an error ", err)
 		return "", err
 	}
 
+	d.Logger.Debug("GetProjectPath returned ", projectPath)
+
+	d.Logger.Debug("GetRenderArgs")
 	renderArgs, err := d.Project.GetRenderArgs()
 
 	if err != nil && !os.IsNotExist(err) {
+		d.Logger.Error("GetRenderArgs returned an error ", err)
 		return "", err
 	}
 
+	d.Logger.Debug("GetRenderArgs returned ", renderArgs)
+
+	d.Logger.Info("calling Renderer.Render with projectPath ", projectPath, "and renderArgs ", renderArgs)
 	pipelineJSON, err := d.Renderer.Render(projectPath, renderArgs)
 
 	if err != nil {
+		d.Logger.Error("Renderer.Render returned an error ", err)
 		return "", err
 	}
+
+	d.Logger.Debug("Renderer.Render returned successfully")
 
 	return pipelineJSON, nil
 }

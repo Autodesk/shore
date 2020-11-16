@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/mod/modfile"
@@ -37,7 +38,7 @@ function()(
 	fs := SetupRenderWithArgs("json", codeFile, "")
 
 	// Test
-	res, renderErr := NewRenderer(fs).Render(testPath, "")
+	res, renderErr := NewRenderer(fs, logrus.New()).Render(testPath, "")
 
 	// Assert
 	assert.Nil(t, renderErr)
@@ -107,7 +108,7 @@ func TestSharedLibraryLoad(t *testing.T) {
 	localFs := SetupSharedLibs()
 
 	// Test
-	renderer := NewRenderer(localFs)
+	renderer := NewRenderer(localFs, logrus.New())
 	libs, err := renderer.getSharedLibs(testPath)
 
 	// Assert
@@ -120,7 +121,7 @@ func TestSharedLibraryLoadNoModFile(t *testing.T) {
 	localFs := afero.NewMemMapFs()
 
 	// Test
-	renderer := NewRenderer(localFs)
+	renderer := NewRenderer(localFs, logrus.New())
 	libs, err := renderer.getSharedLibs(testPath)
 
 	// Assert
@@ -134,7 +135,7 @@ func TestSharedLibraryLoadModFileNotExist(t *testing.T) {
 	localFs.Remove(filepath.Join(testPath, "go.mod"))
 
 	// Test
-	renderer := NewRenderer(localFs)
+	renderer := NewRenderer(localFs, logrus.New())
 	libs, err := renderer.getSharedLibs(testPath)
 
 	// Assert
@@ -158,7 +159,7 @@ required sharedlib/sponnet v1.0.0
 	afero.WriteFile(localFs, filepath.Join(testPath, "go.mod"), []byte(goMod), os.ModePerm)
 
 	// Test
-	renderer := NewRenderer(localFs)
+	renderer := NewRenderer(localFs, logrus.New())
 	libs, err := renderer.getSharedLibs(testPath)
 
 	// Assert
@@ -176,7 +177,7 @@ func TestSharedLibraryMissing(t *testing.T) {
 	localFs.Remove(sharedLibPath)
 
 	// Test
-	renderer := NewRenderer(localFs)
+	renderer := NewRenderer(localFs, logrus.New())
 	libs, err := renderer.getSharedLibs(testPath)
 
 	// Assert
