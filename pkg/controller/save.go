@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -14,19 +14,23 @@ func NewSaveCommand(d *Dependencies) *cobra.Command {
 		Short: "save the pipeline",
 		Long:  "Using the main file configured by the renderer save the pipeline (or pipelines)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			d.Logger.Info("Calling save pipeline")
 			pipeline, err := Render(d)
 
 			if err != nil {
 				return err
 			}
 
+			d.Logger.Info("Calling Backend.SavePipeline")
 			res, err := d.Backend.SavePipeline(pipeline)
 
 			if err != nil {
+				d.Logger.Warn("Save pipeline returned an error", err)
 				return err
 			}
 
-			log.Println(res)
+			d.Logger.Info("Backend.SavePipeline returned")
+			fmt.Println(res)
 			return nil
 		},
 	}

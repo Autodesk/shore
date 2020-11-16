@@ -6,9 +6,18 @@ import (
 	"testing"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
+
+var logger *log.Logger
+
+func init() {
+	logger = logrus.New()
+	logger.SetLevel(log.DebugLevel)
+}
 
 func SetupArgsFile(extension, args string) afero.Fs {
 	localFs := afero.NewMemMapFs()
@@ -28,7 +37,7 @@ b: test2
 	localFs := SetupArgsFile("yml", argsFile)
 
 	// Test
-	project := NewShoreProject(localFs, "/tmp/test/")
+	project := NewShoreProject(localFs, logger, "/tmp/test/")
 	args, err := project.GetRenderArgs()
 
 	// Assert
@@ -43,7 +52,7 @@ func TestReadArgsFileJSON(t *testing.T) {
 	localFs := SetupArgsFile("yml", argsFile)
 
 	// Test
-	project := NewShoreProject(localFs, "/tmp/test/")
+	project := NewShoreProject(localFs, logger, "/tmp/test/")
 	args, err := project.GetRenderArgs()
 
 	// Assert
@@ -77,7 +86,7 @@ func TestReadArgsFileWithNestedValues(t *testing.T) {
 	localFs := SetupArgsFile("json", argsFile)
 
 	// Test
-	project := NewShoreProject(localFs, "/tmp/test/")
+	project := NewShoreProject(localFs, logger, "/tmp/test/")
 	args, err := project.GetRenderArgs()
 
 	// Assert
@@ -100,7 +109,7 @@ func TestNoArgsFileReutnrsEmptyAndNil(t *testing.T) {
 	localFs := afero.NewMemMapFs()
 
 	// Test
-	project := NewShoreProject(localFs, "/tmp/test/")
+	project := NewShoreProject(localFs, logger, "/tmp/test/")
 	args, err := project.GetRenderArgs()
 
 	// Assert

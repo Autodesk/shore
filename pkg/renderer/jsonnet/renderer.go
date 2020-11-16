@@ -7,6 +7,7 @@ import (
 
 	"github.com/Autodesk/shore/pkg/renderer"
 	"github.com/google/go-jsonnet"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/modfile"
 )
@@ -21,13 +22,14 @@ const ArgsFileName string = "render"
 // The struct  holds the required parameters to render a standard shore pipeline.
 type Jsonnet struct {
 	renderer.Renderer
-	VM *jsonnet.VM
-	FS afero.Fs
+	VM  *jsonnet.VM
+	FS  afero.Fs
+	log *log.Logger
 }
 
 // NewRenderer - Create new instance of the JSONNET renderer.
-func NewRenderer(fs afero.Fs) *Jsonnet {
-	return &Jsonnet{VM: jsonnet.MakeVM(), FS: fs}
+func NewRenderer(fs afero.Fs, logger *log.Logger) *Jsonnet {
+	return &Jsonnet{VM: jsonnet.MakeVM(), FS: fs, log: logger}
 }
 
 // Render - Render the code with the VM.

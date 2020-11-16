@@ -73,6 +73,9 @@ github.com/posener/complete/cmd/install
 github.com/posener/complete/match
 # github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
+# github.com/sirupsen/logrus v1.7.0
+## explicit
+github.com/sirupsen/logrus
 # github.com/spf13/afero v1.4.1
 ## explicit
 github.com/spf13/afero

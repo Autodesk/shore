@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 	"github.com/stretchr/testify/assert"
 )
@@ -68,13 +69,22 @@ func (s *mockCustomSpinCli) PipelineExecutionDetails(refID string, args *bytes.B
 	}, &http.Response{StatusCode: http.StatusOK}, nil
 }
 
-var cli = &SpinClient{
-	CustomSpinCLI: &mockCustomSpinCli{},
-	SpinCLI: &SpinCLI{
-		ApplicationControllerAPI: &mockApplicationControllerAPI{},
-		PipelineControllerAPI:    &mockPipelineControllerAPI{},
-		Context:                  context.Background(),
-	},
+var cli *SpinClient
+var logger *logrus.Logger
+
+func init() {
+	logger = logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	cli = &SpinClient{
+		log:           logger,
+		CustomSpinCLI: &mockCustomSpinCli{},
+		SpinCLI: &SpinCLI{
+			ApplicationControllerAPI: &mockApplicationControllerAPI{},
+			PipelineControllerAPI:    &mockPipelineControllerAPI{},
+			Context:                  context.Background(),
+		},
+	}
 }
 
 func TestInternalSaveSuccessForExistingPipeline(t *testing.T) {
