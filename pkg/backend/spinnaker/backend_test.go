@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/sirupsen/logrus"
+	testLog "github.com/sirupsen/logrus/hooks/test"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 	"github.com/stretchr/testify/assert"
 )
@@ -70,10 +71,11 @@ func (s *mockCustomSpinCli) PipelineExecutionDetails(refID string, args *bytes.B
 }
 
 var cli *SpinClient
+
 var logger *logrus.Logger
 
 func init() {
-	logger = logrus.New()
+	logger, _ = testLog.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 
 	cli = &SpinClient{

@@ -7,7 +7,7 @@ import (
 
 	"github.com/Autodesk/shore/pkg/renderer"
 	"github.com/google/go-jsonnet"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"golang.org/x/mod/modfile"
 )
@@ -24,11 +24,11 @@ type Jsonnet struct {
 	renderer.Renderer
 	VM  *jsonnet.VM
 	FS  afero.Fs
-	log *log.Logger
+	log logrus.FieldLogger
 }
 
 // NewRenderer - Create new instance of the JSONNET renderer.
-func NewRenderer(fs afero.Fs, logger *log.Logger) *Jsonnet {
+func NewRenderer(fs afero.Fs, logger logrus.FieldLogger) *Jsonnet {
 	return &Jsonnet{VM: jsonnet.MakeVM(), FS: fs, log: logger}
 }
 
