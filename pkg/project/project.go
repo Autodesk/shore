@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	jsoniter "github.com/json-iterator/go"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -22,11 +22,13 @@ type ProjectOrganizer interface {
 type Project struct {
 	ProjectOrganizer
 	FS          afero.Fs
-	log         *log.Logger
+	log         logrus.FieldLogger
 	projectPath string
 }
 
-func NewShoreProject(fs afero.Fs, logger *log.Logger, projectPath ...string) *Project {
+// NewShoreProject creates a new shore project with default values
+// `projectPath` may be used to override the default project path with is the execution directory (os.Getwd)
+func NewShoreProject(fs afero.Fs, logger logrus.FieldLogger, projectPath ...string) *Project {
 	if len(projectPath) > 0 {
 		return &Project{
 			FS:          fs,

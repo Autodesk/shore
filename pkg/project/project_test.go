@@ -7,16 +7,16 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
+	testLog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
-var logger *log.Logger
+var logger *logrus.Logger
 
 func init() {
-	logger = logrus.New()
-	logger.SetLevel(log.DebugLevel)
+	logger, _ = testLog.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
 }
 
 func SetupArgsFile(extension, args string) afero.Fs {

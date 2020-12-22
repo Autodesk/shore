@@ -7,13 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 )
@@ -40,11 +41,11 @@ type SpinClient struct {
 	initOnce sync.Once
 	*SpinCLI
 	CustomSpinCLI
-	log *log.Logger
+	log logrus.FieldLogger
 }
 
 // NewClient - Create a new default spinnaker client
-func NewClient(logger *log.Logger) *SpinClient {
+func NewClient(logger logrus.FieldLogger) *SpinClient {
 	return &SpinClient{log: logger}
 }
 
@@ -380,12 +381,12 @@ func (s *SpinClient) pollSpinnakerGetPipelineConfigUsingGET(application string, 
 		}
 
 		if len(foundPipeline) == 0 {
-			log.Println("get pipeline request didn't return a payload, sleeping for", pollingSleep)
+			s.log.Info("get pipeline request didn't return a payload, sleeping for", pollingSleep)
 			time.Sleep(time.Duration(pollingSleep))
 			continue
 		}
 
-		log.Println("Pipeline", foundPipeline["name"], "found with id", foundPipeline["id"], "in application", application)
+		s.log.Info("Pipeline", foundPipeline["name"], "found with id", foundPipeline["id"], "in application", application)
 
 		return foundPipeline["id"].(string), queryResp, nil
 	}
@@ -451,7 +452,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 		if err != nil {
 			return err
 		}
-		log.Println(res)
+		s.log.Info(res)
 
 		// Do not try to poll for pipeline ID again if exists already
 		if pipelineID == "" {
@@ -461,8 +462,8 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 			}
 			// pipelineID = pipelineID
 
-			log.Println("Created new pipeline with id:", pipelineID)
-			log.Println(res)
+			s.log.Info("Created new pipeline with id:", pipelineID)
+			s.log.Info(res)
 		}
 
 		// And override stage pipeline value with an the id (a UUID String) received from spinnaker pipeline.
