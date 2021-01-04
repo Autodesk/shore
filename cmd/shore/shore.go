@@ -14,7 +14,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-
 var logVerbosity int
 var logger *logrus.Logger
 
@@ -47,6 +46,7 @@ func init() {
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")
 
+	rootCmd.AddCommand(controller.NewProjectCommand(commonDependencies))
 	rootCmd.AddCommand(controller.NewRenderCommand(commonDependencies))
 	rootCmd.AddCommand(controller.NewSaveCommand(commonDependencies))
 	rootCmd.AddCommand(controller.NewExecCommand(commonDependencies))

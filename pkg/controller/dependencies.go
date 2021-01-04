@@ -10,7 +10,7 @@ import (
 // Dependencies - Shared dependencies all controller MAY require
 type Dependencies struct {
 	Renderer renderer.Renderer
-	Project  project.ProjectOrganizer
 	Backend  backend.Backend
 	Logger   logrus.FieldLogger
+	Project  *project.Project
 }
