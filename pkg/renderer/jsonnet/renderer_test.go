@@ -31,7 +31,7 @@ func SetupRenderWithArgs(extension, codeFile, args string) afero.Fs {
 func TestNewRenderer(t *testing.T) {
 	// Given
 	codeFile := `
-function()(
+function(params={})(
 	{"This-is": "Magic!!!"}
 )
 `

@@ -1,22 +1,23 @@
-package project
+package project_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/Autodesk/shore/pkg/project"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
-var logger *logrus.Logger
+var Logger *log.Logger
 
 func init() {
-	logger, _ = testLog.NewNullLogger()
-	logger.SetLevel(logrus.DebugLevel)
+	Logger, _ = testLog.NewNullLogger()
+	Logger.SetLevel(log.DebugLevel)
 }
 
 func SetupArgsFile(extension, args string) afero.Fs {
@@ -36,9 +37,14 @@ b: test2
 `
 	localFs := SetupArgsFile("yml", argsFile)
 
+	p := project.Project{
+		FS:   localFs,
+		Log:  Logger,
+		Path: "/tmp/test/",
+	}
+
 	// Test
-	project := NewShoreProject(localFs, logger, "/tmp/test/")
-	args, err := project.GetRenderArgs()
+	args, err := p.GetRenderArgs()
 
 	// Assert
 	assert.Nil(t, err)
@@ -50,10 +56,14 @@ func TestReadArgsFileJSON(t *testing.T) {
 	// Given
 	argsFile := `{"a": "test1", "b": "test2"}`
 	localFs := SetupArgsFile("yml", argsFile)
+	p := project.Project{
+		FS:   localFs,
+		Log:  Logger,
+		Path: "/tmp/test/",
+	}
 
 	// Test
-	project := NewShoreProject(localFs, logger, "/tmp/test/")
-	args, err := project.GetRenderArgs()
+	args, err := p.GetRenderArgs()
 
 	// Assert
 	assert.Nil(t, err)
@@ -84,10 +94,14 @@ func TestReadArgsFileWithNestedValues(t *testing.T) {
 	]
 }`
 	localFs := SetupArgsFile("json", argsFile)
+	p := project.Project{
+		FS:   localFs,
+		Log:  Logger,
+		Path: "/tmp/test/",
+	}
 
 	// Test
-	project := NewShoreProject(localFs, logger, "/tmp/test/")
-	args, err := project.GetRenderArgs()
+	args, err := p.GetRenderArgs()
 
 	// Assert
 	argsMap := make(map[string]interface{})
@@ -107,10 +121,14 @@ func TestReadArgsFileWithNestedValues(t *testing.T) {
 func TestNoArgsFileReutnrsEmptyAndNil(t *testing.T) {
 	// Given
 	localFs := afero.NewMemMapFs()
+	p := project.Project{
+		FS:   localFs,
+		Log:  Logger,
+		Path: "/tmp/test/",
+	}
 
 	// Test
-	project := NewShoreProject(localFs, logger, "/tmp/test/")
-	args, err := project.GetRenderArgs()
+	args, err := p.GetRenderArgs()
 
 	// Assert
 	assert.Equal(t, "", args)

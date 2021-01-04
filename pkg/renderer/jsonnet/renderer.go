@@ -41,20 +41,14 @@ func (j *Jsonnet) Render(projectPath string, renderArgs string) (string, error) 
 		return "", err
 	}
 
-	if renderArgs != "" {
-		j.VM.TLACode("params", renderArgs)
-	}
-
-	if err != nil {
-		return "", err
-	}
-
 	fileImporter, err := j.getFileImporter(projectPath)
 
 	if err != nil {
 		return "", err
 	}
 
+	// Always include params, even if they are empty
+	j.VM.TLACode("params", renderArgs)
 	j.VM.Importer(fileImporter)
 	// Currently adds the local `sponnet instance` to be available from `sponnet/*.libsonnet`
 	return j.VM.EvaluateSnippet(renderFile, string(codeBytes))
