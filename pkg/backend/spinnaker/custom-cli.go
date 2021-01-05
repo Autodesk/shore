@@ -1,8 +1,8 @@
 package spinnaker
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -16,10 +16,10 @@ A custom API layer implementation for specific usecases when gateclient doesn't 
 // CustomSpinCLI is a wrapper the implementes specific requests that are either broken or unsupported by SpinCLI.
 type CustomSpinCLI interface {
 	Do(req *http.Request) ([]byte, *http.Response, error)
-	Post(url string, args *bytes.Buffer) ([]byte, *http.Response, error)
-	Get(url string, args *bytes.Buffer) ([]byte, *http.Response, error)
-	ExecutePipeline(application, pipelineName string, args *bytes.Buffer) (*ExecutePipelineResponse, *http.Response, error)
-	PipelineExecutionDetails(refID string, args *bytes.Buffer) (*PipelineExecutionDetailsResponse, *http.Response, error)
+	Post(url string, args io.Reader) ([]byte, *http.Response, error)
+	Get(url string, args io.Reader) ([]byte, *http.Response, error)
+	ExecutePipeline(application, pipelineName string, args io.Reader) (*ExecutePipelineResponse, *http.Response, error)
+	PipelineExecutionDetails(refID string, args io.Reader) (*PipelineExecutionDetailsResponse, *http.Response, error)
 }
 
 // CustomSpinClient is a wrapper the implementes specific requests that are either broken or unsupported by SpinCLI.
@@ -29,6 +29,7 @@ type CustomSpinClient struct {
 	HTTPClient http.Client
 }
 
+// Do - Generic Do, same as http.Do provided by Golang http package
 func (cli *CustomSpinClient) Do(req *http.Request) ([]byte, *http.Response, error) {
 	req.Header.Set("Content-Type", "application/json")
 
@@ -45,8 +46,8 @@ func (cli *CustomSpinClient) Do(req *http.Request) ([]byte, *http.Response, erro
 	return resBuf, res, err
 }
 
-// Generic post request using the Spinnaker HTTP Client
-func (cli *CustomSpinClient) Post(url string, args *bytes.Buffer) ([]byte, *http.Response, error) {
+// Post - Generic post request using the Spinnaker HTTP Client
+func (cli *CustomSpinClient) Post(url string, args io.Reader) ([]byte, *http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, url, args)
 
 	if err != nil {
@@ -56,7 +57,8 @@ func (cli *CustomSpinClient) Post(url string, args *bytes.Buffer) ([]byte, *http
 	return cli.Do(req)
 }
 
-func (cli *CustomSpinClient) Get(url string, args *bytes.Buffer) ([]byte, *http.Response, error) {
+// Get - Generic Get request using the Spinnaker HTTP Client
+func (cli *CustomSpinClient) Get(url string, args io.Reader) ([]byte, *http.Response, error) {
 	req, err := http.NewRequest(http.MethodGet, url, args)
 
 	if err != nil {
@@ -66,17 +68,23 @@ func (cli *CustomSpinClient) Get(url string, args *bytes.Buffer) ([]byte, *http.
 	return cli.Do(req)
 }
 
+// ExecutePipelineResponse - Response
 type ExecutePipelineResponse struct {
 	Ref string
 }
 
 // ExecutePipeline calls the POST endpoint of a pipeline to execute it
-func (cli *CustomSpinClient) ExecutePipeline(application, pipelineName string, args *bytes.Buffer) (*ExecutePipelineResponse, *http.Response, error) {
+func (cli *CustomSpinClient) ExecutePipeline(application, pipelineName string, args io.Reader) (*ExecutePipelineResponse, *http.Response, error) {
 	var execPipelineResponse ExecutePipelineResponse
 
 	url := fmt.Sprintf("%s/pipelines/%s/%s", cli.Endpoint, application, pipelineName)
-	body, res, nil := cli.Post(url, args)
-	err := jsoniter.Unmarshal(body, &execPipelineResponse)
+	body, res, err := cli.Post(url, args)
+
+	if err != nil {
+		return &ExecutePipelineResponse{}, res, err
+	}
+
+	err = jsoniter.Unmarshal(body, &execPipelineResponse)
 
 	if err != nil {
 		return &ExecutePipelineResponse{}, res, err
@@ -96,7 +104,7 @@ type PipelineExecutionDetailsResponse struct {
 	PipelineName string                   `json:"pipelineName"`
 }
 
-func (cli *CustomSpinClient) PipelineExecutionDetails(refID string, args *bytes.Buffer) (*PipelineExecutionDetailsResponse, *http.Response, error) {
+func (cli *CustomSpinClient) PipelineExecutionDetails(refID string, args io.Reader) (*PipelineExecutionDetailsResponse, *http.Response, error) {
 	var pipelineExecutionDetails PipelineExecutionDetailsResponse
 
 	url := fmt.Sprintf("%s/pipelines/%s/", cli.Endpoint, refID)

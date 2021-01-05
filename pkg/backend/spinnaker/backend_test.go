@@ -1,8 +1,9 @@
 package spinnaker
 
 import (
-	"bytes"
 	"context"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -50,11 +51,12 @@ type mockCustomSpinCli struct {
 	CustomSpinCLI
 }
 
-func (s *mockCustomSpinCli) ExecutePipeline(application, pipelineName string, args *bytes.Buffer) (*ExecutePipelineResponse, *http.Response, error) {
-	return &ExecutePipelineResponse{Ref: "/pipeline/1234"}, &http.Response{StatusCode: http.StatusOK}, nil
+func (s *mockCustomSpinCli) ExecutePipeline(application, pipelineName string, args io.Reader) (*ExecutePipelineResponse, *http.Response, error) {
+	req, _ := http.NewRequest("POST", "url", args)
+	return &ExecutePipelineResponse{Ref: "/pipeline/1234"}, &http.Response{StatusCode: http.StatusOK, Request: req}, nil
 }
 
-func (s *mockCustomSpinCli) PipelineExecutionDetails(refID string, args *bytes.Buffer) (*PipelineExecutionDetailsResponse, *http.Response, error) {
+func (s *mockCustomSpinCli) PipelineExecutionDetails(refID string, args io.Reader) (*PipelineExecutionDetailsResponse, *http.Response, error) {
 	return &PipelineExecutionDetailsResponse{
 		Application: "application",
 		Stages: []map[string]interface{}{
@@ -157,6 +159,44 @@ func TestExecArgsFailing(t *testing.T) {
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'pipeline' missing\nrequired args key 'application' missing")
+}
+
+func TestExecParametersMap(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": {"abc123": "abc123"}}}`)
+	body, _ := ioutil.ReadAll(res.Request.Body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, `{"parameters":{"answer":"{\"abc123\":\"abc123\"}"}}`, string(body))
+}
+
+func TestExecParametersArray(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1,2,3,4, "5", "this is something"]}}`)
+	body, _ := ioutil.ReadAll(res.Request.Body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, `{"parameters":{"answer":"[1,2,3,4,\"5\",\"this is something\"]"}}`, string(body))
+}
+
+func TestExecParametersArrayMap(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1, 2, 3, "abc", {"answer": 42}]}}`)
+	body, _ := ioutil.ReadAll(res.Request.Body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, `{"parameters":{"answer":"[1,2,3,\"abc\",{\"answer\":42}]"}}`, string(body))
+}
+
+func TestExecParametersNonMapFails(t *testing.T) {
+	// Test
+	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": [1, 2, 3, "abc", {"answer": 42}]}`)
+
+	// Assert
+	assert.EqualError(t, err, "`parameters` must be an object")
 }
 
 func TestSaveSuccess(t *testing.T) {

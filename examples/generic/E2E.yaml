@@ -4,7 +4,9 @@ tests:
   "Test Success":
     execution_args:
       parameters:
-        a: "a"
+        a:
+          a:
+            a: "aaa"
     assertions:
       "Stage 1":
         expected_status: succeeded
