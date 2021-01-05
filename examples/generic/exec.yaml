@@ -1,4 +1,21 @@
 pipeline: abc
 application: test1test2test3
 parameters:
-  test123: Are you ready to enjoy your day?!?
+  testMap:
+    a: a
+    b: b
+  testList:
+    - this
+    - a
+    - data
+    - 1
+    - 2
+    - asd
+    - asd: asd
+  testListMap:
+    - this: this
+    - a: a
+    - data: data
+  testBool: true
+  testInt: 1
+  testString: "abc123"

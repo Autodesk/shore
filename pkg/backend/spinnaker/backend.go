@@ -3,12 +3,12 @@ package spinnaker
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -138,9 +138,9 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 
 // ExecutePipeline - Execute a spinnaker pipeline.
 //
-// Patameters are optional.
+// `patameters` are optional.
 func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Response, error) {
-	// For some crazy reason, spicli invoke doesn't return the ID of the pipeline execution.
+	// For some crazy reason, spincli invoke doesn't return the ID of the pipeline execution.
 	// BTW the crazy reason is that `swagger-code-gen` produces wrong code and Spin-Cli (and shore...) depends on this wrong code.
 	// So this request needs to be done 100% manually.
 	// For this reason we use the `CustomSpinCLI` interface to implement all the things `SpinCli` either does wrong, or is 100% broken.
@@ -151,7 +151,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 		return &ExecutePipelineResponse{}, &http.Response{}, err
 	}
 
-	err := json.Unmarshal([]byte(argsJSON), &args)
+	err := jsoniter.Unmarshal([]byte(argsJSON), &args)
 
 	if err != nil {
 		return &ExecutePipelineResponse{}, &http.Response{}, err
@@ -164,10 +164,35 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 	application := args["application"].(string)
 	pipelineName := args["pipeline"].(string)
 
+	// The Spinnaker API is very weird in terms of JSON
+	// Sending JSON as is just kills the request (400) status code.
+	// However, if the JSON is stringified (example {"a": "a"} -> "{\"a\": \"a\"}")
+	// the request will work fine.
+	// This is due to the fact that the parameters API can only handle scalar values (string, int, bool)
+	// This logic checks if a pipeline parameter looks like: {"key": "value"}, ["key"], [{"key": "value"}]
+	// If the value is of one of the example types, the algorithm will stringify the property before the request is sent.
+	if params, exists := args["parameters"]; exists == true {
+		if reflect.TypeOf(params).Kind() != reflect.Map {
+			return &ExecutePipelineResponse{}, &http.Response{}, fmt.Errorf("`parameters` must be an object")
+		}
+
+		parameters := args["parameters"].(map[string]interface{})
+
+		for key, val := range parameters {
+			switch v := val.(type) {
+			case map[string]interface{}, []interface{}:
+				{
+					semiMarshal, _ := jsoniter.Marshal(v)
+					parameters[key] = string(semiMarshal)
+				}
+			}
+		}
+	}
+
 	delete(args, "application")
 	delete(args, "pipeline")
 
-	argsBytes, err := json.Marshal(args)
+	argsBytes, err := jsoniter.Marshal(args)
 
 	if err != nil {
 		return &ExecutePipelineResponse{}, &http.Response{}, err
@@ -203,19 +228,26 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 	testErrors := make(map[string][]string)
 
 	for testName, test := range testConfig.Tests {
-		execArgs, err := json.Marshal(test.ExecArgs)
+		if test.ExecArgs == nil {
+			test.ExecArgs = make(map[string]interface{})
+		}
+
+		test.ExecArgs["application"] = testConfig.Application
+		test.ExecArgs["pipeline"] = testConfig.Pipeline
+
+		execArgs, err := jsoniter.Marshal(test.ExecArgs)
 
 		if err != nil {
 			return err
 		}
 
-		body, _, err := s.CustomSpinCLI.ExecutePipeline(testConfig.Application, testConfig.Pipeline, bytes.NewBuffer(execArgs))
+		body, _, err := s.ExecutePipeline(string(execArgs))
 
 		if err != nil {
 			testErrors[testName] = append(testErrors[testName], err.Error())
 		}
 
-		refID := strings.Split(body.Ref, "/")[2]
+		refID := strings.Split(body.(*ExecutePipelineResponse).Ref, "/")[2]
 
 		var execDetails *PipelineExecutionDetailsResponse
 
