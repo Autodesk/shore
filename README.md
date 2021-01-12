@@ -7,13 +7,17 @@ Shore (verb) is a tool used to develop deployment pipelines for different pipeli
 ## Building Shore
 
 ```bash
-export GOPRIVATE="github.com"
 git clone git@github.com:***REMOVED***shore.git
+
+export GOPRIVATE="github.com"
+export GOPROXY="https://:@***REMOVED***/***REMOVED***/gocenter/"
+
 go mod download
 go mod vendor
 go build -o shore cmd/shore/shore.go
 ./shore
 ```
+
 ### Reading/Rendering files
 
 JSONNET/{INSERT LANGUAGE} files will read from `./{project_path}/main.pipeline.jsonnet`.
@@ -44,3 +48,13 @@ Instead the framework will try to provide known good values for a specific backe
 The framework will provide a few packages and functions OOTB for customer's to consume.
 
 These packages will be made available through the common resources and identified at runtime.
+
+# Release
+
+[Jenkins Job](https://master-11.***REMOVED***/job/***REMOVED***job/shore/)
+
+For `master` branch merges the [`Jenkins`]('./Jenkinsfile') will create a new file in [Artifactory](https://***REMOVED***.dev.***REMOVED***/***REMOVED***/webapp/#/artifacts/browse/tree/General/SHORE-dist)
+
+The format is `shore-${version}-${branch_name}-${build_number}-${architecture}`.
+
+These builds are recommended for testing, debugging and sharing with other contributors for validations.

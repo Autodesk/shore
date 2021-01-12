@@ -2,8 +2,10 @@
 vendor/*
 !vendor/modules.txt
 
-shore
-
 # IDE Specific
 .vscode/
 .idea
+
+# Project specific
+shore*
+!cmd/shore
