@@ -12,7 +12,7 @@ When developing, extending or testing pipelines on any 3rd party system (not the
 
 ## High Level Goals
 
-* **Reduce time to release/deploy of features**
+* **Reduce time to release/deploy features**
 * **Testable pipelines** - promote a culture of testing and resilience.
 * **Scaling & Collaboration through code reuse**.
 * **Improve Developer Experience** - Reduce friction when developing pipelines
