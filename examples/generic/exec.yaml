@@ -19,3 +19,7 @@ parameters:
   testBool: true
   testInt: 1
   testString: "abc123"
+artifacts:
+  - type: "custom/object"
+    name: "shore-artifact"
+    reference: "potato"

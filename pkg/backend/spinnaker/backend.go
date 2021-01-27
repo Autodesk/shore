@@ -189,6 +189,22 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 		}
 	}
 
+	// Check if artifacts are present, and if it's an array.
+	if artifacts, exists := args["artifacts"]; exists == true {
+		if reflect.TypeOf(artifacts).Kind() != reflect.Slice {
+			return &ExecutePipelineResponse{}, &http.Response{}, fmt.Errorf("`artifacts` must be an Array")
+		}
+
+		artifactsSlice, _ := artifacts.([]interface{})
+		s.log.Debug("Number of artifacts: ", len(artifactsSlice))
+		// Ideally would check the structure of each artifact so that it's correct - beyond just checking that it's an object/map
+		for _, artifact := range artifactsSlice {
+			if reflect.TypeOf(artifact).Kind() != reflect.Map {
+				return &ExecutePipelineResponse{}, &http.Response{}, fmt.Errorf("an artifact in `artifacts` must be an object")
+			}
+		}
+	}
+
 	delete(args, "application")
 	delete(args, "pipeline")
 
