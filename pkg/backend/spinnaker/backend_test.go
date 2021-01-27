@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"testing"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
@@ -197,6 +198,65 @@ func TestExecParametersNonMapFails(t *testing.T) {
 
 	// Assert
 	assert.EqualError(t, err, "`parameters` must be an object")
+}
+
+func TestExecExtraFields(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "github": {"commit": "deadbeef", "branch": "dev"}, "pipeline": "test", "parameters": {}, "artifacts": []}`)
+	bodyString, _ := ioutil.ReadAll(res.Request.Body)
+	var body map[string]interface{}
+	jsoniter.Unmarshal([]byte(bodyString), &body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(body))
+	assert.Contains(t, body, `parameters`)
+	assert.Contains(t, body, `artifacts`)
+	assert.Contains(t, body, `github`)
+}
+
+func TestExecArtifactsArray(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": [{"type": "custom/object", "name": "test-artifact-one", "reference": "test-value-one"}, {"type": "custom/object", "name": "test-artifact-two", "reference": "test-value-two"}]}`)
+	bodyString, _ := ioutil.ReadAll(res.Request.Body)
+	var body map[string]interface{}
+	jsoniter.Unmarshal([]byte(bodyString), &body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(body))
+	assert.Contains(t, body, `artifacts`)
+	assert.Equal(t, 2, len(body["artifacts"].([]interface{})))
+}
+
+func TestExecArtifactsEmptyArray(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": []}`)
+	bodyString, _ := ioutil.ReadAll(res.Request.Body)
+	var body map[string]interface{}
+	jsoniter.Unmarshal([]byte(bodyString), &body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(body))
+	assert.Contains(t, body, `artifacts`)
+	assert.Equal(t, 0, len(body["artifacts"].([]interface{})))
+}
+
+func TestExecArtifactsNonArrayFails(t *testing.T) {
+	// Test
+	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": {"type": "potato"}}`)
+
+	// Assert
+	assert.EqualError(t, err, "`artifacts` must be an Array")
+}
+
+func TestExecArtifactsArrayNonObjectsFails(t *testing.T) {
+	// Test
+	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": ["potato", 1, ["apple", "orange"]]}`)
+
+	// Assert
+	assert.EqualError(t, err, "an artifact in `artifacts` must be an object")
 }
 
 func TestSaveSuccess(t *testing.T) {
