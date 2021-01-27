@@ -35,9 +35,10 @@ func NewRenderer(fs afero.Fs, logger logrus.FieldLogger) *Jsonnet {
 // Render - Render the code with the VM.
 func (j *Jsonnet) Render(projectPath string, renderArgs string) (string, error) {
 	renderFile := filepath.Join(projectPath, MainFileName)
+	// TODO implement lazy loading
 	codeBytes, err := afero.ReadFile(j.FS, renderFile)
 
-	if _, isPathErr := err.(*os.PathError); err != nil && !isPathErr {
+	if err != nil {
 		return "", err
 	}
 

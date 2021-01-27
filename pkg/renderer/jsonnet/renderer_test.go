@@ -129,6 +129,19 @@ func TestSharedLibraryLoadNoModFile(t *testing.T) {
 	assert.Equal(t, os.IsNotExist(err), true)
 }
 
+func TestPipelineFileDoesNotExist(t *testing.T) {
+	// Given
+	localFs := afero.NewMemMapFs()
+
+	// Test
+	renderer := NewRenderer(localFs, logrus.New())
+	pipeline, err := renderer.Render(testPath, "")
+
+	// Assert
+	assert.Equal(t, pipeline, "")
+	assert.Error(t, err)
+}
+
 func TestSharedLibraryLoadModFileNotExist(t *testing.T) {
 	// Given
 	localFs := SetupSharedLibs()
