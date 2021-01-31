@@ -1,4 +1,4 @@
-package controller
+package command
 
 import (
 	"github.com/Autodesk/shore/pkg/backend"

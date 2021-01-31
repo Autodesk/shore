@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/Autodesk/shore/pkg/backend/spinnaker"
-	"github.com/Autodesk/shore/pkg/controller"
+	"github.com/Autodesk/shore/pkg/command"
 	"github.com/Autodesk/shore/pkg/project"
 	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus"
@@ -43,7 +43,7 @@ func init() {
 	fs := afero.NewOsFs()
 	logger = logrus.New()
 
-	commonDependencies := &controller.Dependencies{
+	commonDependencies := &command.Dependencies{
 		Project:  project.NewShoreProject(fs, logger),
 		Renderer: jsonnet.NewRenderer(fs, logger),
 		Backend:  spinnaker.NewClient(logger),
@@ -52,11 +52,11 @@ func init() {
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")
 
-	rootCmd.AddCommand(controller.NewProjectCommand(commonDependencies))
-	rootCmd.AddCommand(controller.NewRenderCommand(commonDependencies))
-	rootCmd.AddCommand(controller.NewSaveCommand(commonDependencies))
-	rootCmd.AddCommand(controller.NewExecCommand(commonDependencies))
-	rootCmd.AddCommand(controller.NewTestRemoteCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewProjectCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewRenderCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewSaveCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewExecCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewTestRemoteCommand(commonDependencies))
 	// Make the version easily parsable when invoking `shore --version`
 	rootCmd.SetVersionTemplate("{{.Version}}\n")
 }
