@@ -22,11 +22,16 @@ type CustomSpinCLI interface {
 	PipelineExecutionDetails(refID string, args io.Reader) (*PipelineExecutionDetailsResponse, *http.Response, error)
 }
 
+// CustomSpinCLI is a wrapper the implementes specific requests that are either broken or unsupported by SpinCLI.
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // CustomSpinClient is a wrapper the implementes specific requests that are either broken or unsupported by SpinCLI.
 type CustomSpinClient struct {
 	CustomSpinCLI
 	Endpoint   string
-	HTTPClient http.Client
+	HTTPClient HTTPClient
 }
 
 // Do - Generic Do, same as http.Do provided by Golang http package
@@ -73,6 +78,41 @@ type ExecutePipelineResponse struct {
 	Ref string
 }
 
+type CustomCliError struct {
+	PipelineName    string
+	ApplicationName string
+	StatusCode      int
+	Err             error
+}
+
+func (e *CustomCliError) Error() string {
+	errMessage := fmt.Sprintf(
+		"status code: %v, error while executing %v on application %v",
+		e.StatusCode,
+		e.PipelineName,
+		e.ApplicationName,
+	)
+
+	if e.Err == nil {
+		return errMessage
+	}
+
+	return fmt.Sprintf(errMessage, " error: %v", e.Err)
+}
+
+// NewCustomCliError produces Custom CLI error on HTTP communication issues
+func NewCustomCliError(pipelineName string, application string, res *http.Response, err error) error {
+	if res.StatusCode == http.StatusOK {
+		return nil
+	}
+	return &CustomCliError{
+		PipelineName:    pipelineName,
+		ApplicationName: application,
+		StatusCode:      res.StatusCode,
+		Err:             err,
+	}
+}
+
 // ExecutePipeline calls the POST endpoint of a pipeline to execute it
 func (cli *CustomSpinClient) ExecutePipeline(application, pipelineName string, args io.Reader) (*ExecutePipelineResponse, *http.Response, error) {
 	var execPipelineResponse ExecutePipelineResponse
@@ -80,7 +120,8 @@ func (cli *CustomSpinClient) ExecutePipeline(application, pipelineName string, a
 	url := fmt.Sprintf("%s/pipelines/%s/%s", cli.Endpoint, application, pipelineName)
 	body, res, err := cli.Post(url, args)
 
-	if err != nil {
+	if err != nil || res.StatusCode > 399 {
+		err = NewCustomCliError(pipelineName, application, res, err)
 		return &ExecutePipelineResponse{}, res, err
 	}
 
