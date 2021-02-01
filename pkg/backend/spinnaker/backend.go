@@ -72,7 +72,7 @@ func (s *SpinClient) initializeAPI() error {
 				return
 			}
 
-			s.CustomSpinCLI = &CustomSpinClient{Endpoint: gateClient.Config.Gate.Endpoint, HTTPClient: *httpClient}
+			s.CustomSpinCLI = &CustomSpinClient{Endpoint: gateClient.Config.Gate.Endpoint, HTTPClient: httpClient}
 			s.SpinCLI = &SpinCLI{
 				ApplicationControllerAPI: gateClient.ApplicationControllerApi,
 				PipelineControllerAPI:    gateClient.PipelineControllerApi,
@@ -215,6 +215,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 	}
 
 	body, res, err := s.CustomSpinCLI.ExecutePipeline(application, pipelineName, bytes.NewBuffer(argsBytes))
+
 	return body, res, err
 }
 
@@ -261,6 +262,10 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 
 		if err != nil {
 			testErrors[testName] = append(testErrors[testName], err.Error())
+		}
+
+		if len(body.(*ExecutePipelineResponse).Ref) == 0 {
+			continue
 		}
 
 		refID := strings.Split(body.(*ExecutePipelineResponse).Ref, "/")[2]
