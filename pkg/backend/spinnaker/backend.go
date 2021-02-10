@@ -1,3 +1,10 @@
+/*
+Package spinnaker - a `shore` backend implementation for Spinnaker APIs
+
+An abstraction layer over Spinnaker communications, unifying the experience for `shore` developers when working with a `spinnaker` backend.
+
+The abstraction implements the standard `shore-backend` interface from github.com/Autodesk/shore/pkg/backend/spinnaker
+*/
 package spinnaker
 
 import (
@@ -13,6 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Autodesk/shore/internal/retry"
+	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
@@ -225,6 +234,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 // TODO: Design a struct to pass data back to `shore-cli` so the UI layer could render the test-results correctly.
 func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 	var testConfig TestsConfig
+	s.log.Info("Starting test suite")
 
 	if err := jsoniter.Unmarshal([]byte(config), &testConfig); err != nil {
 		return err
@@ -245,6 +255,8 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 	testErrors := make(map[string][]string)
 
 	for testName, test := range testConfig.Tests {
+		s.log.Info("Running test %s", testName)
+
 		if test.ExecArgs == nil {
 			test.ExecArgs = make(map[string]interface{})
 		}
@@ -257,13 +269,15 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 		if err != nil {
 			return err
 		}
-
+		s.log.Info("Executing pipeline for test: ", testName)
 		body, _, err := s.ExecutePipeline(string(execArgs))
 
 		if err != nil {
+			s.log.Debug("Pipeline execution failed for test: ", testName)
 			testErrors[testName] = append(testErrors[testName], err.Error())
 		}
 
+		// TODO: Need to check what happens in a 404 case and format an error for it.
 		if len(body.(*ExecutePipelineResponse).Ref) == 0 {
 			continue
 		}
@@ -271,23 +285,17 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 		refID := strings.Split(body.(*ExecutePipelineResponse).Ref, "/")[2]
 
 		var execDetails *PipelineExecutionDetailsResponse
-
+		s.log.Info("Retrieving pipeline details for test: ", testName)
 		execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
 
-		// Currently waiting for roughly 20 minutes before exiting the loop
-		// TODO: Make this value configurable
-		maxTries := 50
-		tries := 0
+		if execDetails.Status == PipelineRunning {
+			s.log.Info("Waiting for pipeline to finish for test: ", testName)
+			execDetails, _, err = s.WaitForPipelineRunEnd(refID)
+			if err != nil {
 
-		for execDetails.Status == PipelineRunning && tries < maxTries {
-			execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
-			tries++
-			time.Sleep(time.Second * time.Duration(tries))
-		}
-
-		if tries == maxTries {
-			testErrors[testName] = append(testErrors[testName], fmt.Sprintf("max timed out reached for test: '%s'", testName))
-			continue
+				testErrors[testName] = append(testErrors[testName], fmt.Errorf("max timed out reached for test: '%s' with errors: %w", testName, err).Error())
+				continue
+			}
 		}
 
 		if err != nil {
@@ -333,6 +341,39 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 	}
 
 	return nil
+}
+
+// WaitForPipelineRunEnd - Wait for the pipeline to finish running.
+// This call uses sleeps and is a blocking call.
+func (s *SpinClient) WaitForPipelineRunEnd(refID string) (*PipelineExecutionDetailsResponse, *http.Response, error) {
+	var errors error
+
+	retryConfig := retry.Config{
+		Tries: 50,
+		// Linear regresion, wait for the the amount of seconds that this "try" matches.
+		// I.E. wait 1 second, 2 seconds, 3 seconds.... etc...
+		DelayFunc: func(try int) time.Duration { return time.Duration(time.Second * time.Duration(try)) },
+	}
+
+	var execDetails *PipelineExecutionDetailsResponse
+	var res *http.Response
+	var err error
+
+	retryFunc := func() error {
+		execDetails, res, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
+
+		if execDetails.Status == PipelineRunning {
+			return retry.ErrRetry
+		}
+
+		return nil
+	}
+
+	if retryErr := retry.Retry(retryFunc, retryConfig); retryErr != nil {
+		return execDetails, res, multierror.Append(errors, retryErr, err)
+	}
+
+	return execDetails, res, err
 }
 
 func (s *SpinClient) isValidPipeline(pipeline map[string]interface{}) error {
@@ -422,6 +463,7 @@ func (s *SpinClient) pollSpinnakerGetPipelineConfigUsingGET(application string, 
 
 	for pollingSleep := 1; pollingSleep <= pollingTimeout; pollingSleep += pollingStep {
 		foundPipeline, queryResp, _ := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+		defer queryResp.Body.Close()
 
 		if queryResp.StatusCode != http.StatusOK {
 			b, _ := ioutil.ReadAll(queryResp.Body)

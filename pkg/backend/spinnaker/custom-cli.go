@@ -78,6 +78,7 @@ type ExecutePipelineResponse struct {
 	Ref string
 }
 
+// CustomCliError - an error wrapper for the Spinnaker API errors
 type CustomCliError struct {
 	PipelineName    string
 	ApplicationName string
@@ -105,6 +106,7 @@ func NewCustomCliError(pipelineName string, application string, res *http.Respon
 	if res.StatusCode == http.StatusOK {
 		return nil
 	}
+
 	return &CustomCliError{
 		PipelineName:    pipelineName,
 		ApplicationName: application,
@@ -120,9 +122,20 @@ func (cli *CustomSpinClient) ExecutePipeline(application, pipelineName string, a
 	url := fmt.Sprintf("%s/pipelines/%s/%s", cli.Endpoint, application, pipelineName)
 	body, res, err := cli.Post(url, args)
 
-	if err != nil || res.StatusCode > 399 {
-		err = NewCustomCliError(pipelineName, application, res, err)
-		return &ExecutePipelineResponse{}, res, err
+	if err != nil {
+		// res == nil  If there is an HTTP error with no response (I.E. TLS Handshake Error, No Response from the Load-Balancer, etc...)
+		if res == nil {
+			// If the response is `nil` we hit a `nil` pointer in the `NewCustomCliError` function
+			// TO mitigate that problem, we create a fake Http.Response and bubble up the error.
+			return &ExecutePipelineResponse{}, res, NewCustomCliError(pipelineName, application, &http.Response{}, err)
+		}
+
+		// Generic Error handling
+		return &ExecutePipelineResponse{}, res, NewCustomCliError(pipelineName, application, res, err)
+	}
+
+	if res.StatusCode > 399 {
+		return &ExecutePipelineResponse{}, res, NewCustomCliError(pipelineName, application, res, err)
 	}
 
 	err = jsoniter.Unmarshal(body, &execPipelineResponse)

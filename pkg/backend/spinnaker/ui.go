@@ -1,7 +1,6 @@
-/*
-A fake UI implementation to mimick https://github.com/mitchellh/cli which SpinCli depends on
-*/
 package spinnaker
+
+// A fake UI implementation to mimick https://github.com/mitchellh/cli which SpinCli depends on
 
 import "fmt"
 
