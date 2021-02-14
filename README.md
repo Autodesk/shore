@@ -1,6 +1,6 @@
 # Shore
 
-[![Build Status](https://master-11.***REMOVED***/buildStatus/icon?job=morey%2Fshore%2Fmaster)](https://master-11.***REMOVED***/job/***REMOVED***job/shore/job/master/)
+[![Build Status](https://***REMOVED***.***REMOVED***/buildStatus/icon?job=forge-cd-services%2Fshore%2Fmaster)](https://***REMOVED***.***REMOVED***/job/forge-cd-services/job/shore/job/master/)
 
 Shore (verb) is a tool used to develop deployment pipelines for different pipeline based products like Spinnaker.
 
