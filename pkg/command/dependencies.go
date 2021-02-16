@@ -1,9 +1,9 @@
 package command
 
 import (
-	"github.com/Autodesk/shore/pkg/backend"
-	"github.com/Autodesk/shore/pkg/project"
-	"github.com/Autodesk/shore/pkg/renderer"
+	"github.com/Autodeskshore/pkg/backend"
+	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/sirupsen/logrus"
 )
 

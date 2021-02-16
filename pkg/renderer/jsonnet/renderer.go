@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Autodesk/shore/pkg/renderer"
+	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/google/go-jsonnet"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"

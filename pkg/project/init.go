@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autodesk/shore/internal/gocmd"
+	"github.com/Autodeskshore/internal/gocmd"
 	"github.com/sirupsen/logrus"
 )
 

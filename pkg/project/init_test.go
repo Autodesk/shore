@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Autodesk/shore/pkg/project"
+	"github.com/Autodeskshore/pkg/project"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

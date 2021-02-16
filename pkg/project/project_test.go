@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Autodesk/shore/pkg/project"
+	"github.com/Autodeskshore/pkg/project"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"

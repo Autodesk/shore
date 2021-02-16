@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Autodesk/shore/internal/gocmd"
-	"github.com/Autodesk/shore/pkg/project"
+	"github.com/Autodeskshore/internal/gocmd"
+	"github.com/Autodeskshore/pkg/project"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
