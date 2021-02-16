@@ -3,7 +3,7 @@ Package spinnaker - a `shore` backend implementation for Spinnaker APIs
 
 An abstraction layer over Spinnaker communications, unifying the experience for `shore` developers when working with a `spinnaker` backend.
 
-The abstraction implements the standard `shore-backend` interface from github.com/Autodesk/shore/pkg/backend/spinnaker
+The abstraction implements the standard `shore-backend` interface from github.com/Autodeskshore/pkg/backend/spinnaker
 */
 package spinnaker
 
@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autodesk/shore/internal/retry"
+	"github.com/Autodeskshore/internal/retry"
 	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"

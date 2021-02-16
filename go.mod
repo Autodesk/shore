@@ -1,4 +1,4 @@
-module github.com/Autodesk/shore
+module github.com/Autodeskshore
 
 go 1.15
 
