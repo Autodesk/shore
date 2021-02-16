@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"reflect"
 	"strings"
@@ -148,7 +149,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 // ExecutePipeline - Execute a spinnaker pipeline.
 //
 // `patameters` are optional.
-func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Response, error) {
+func (s *SpinClient) ExecutePipeline(argsJSON string) (string, *http.Response, error) {
 	// For some crazy reason, spincli invoke doesn't return the ID of the pipeline execution.
 	// BTW the crazy reason is that `swagger-code-gen` produces wrong code and Spin-Cli (and shore...) depends on this wrong code.
 	// So this request needs to be done 100% manually.
@@ -157,17 +158,17 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 	var args map[string]interface{}
 
 	if err := s.initializeAPI(); err != nil {
-		return &ExecutePipelineResponse{}, &http.Response{}, err
+		return "", &http.Response{}, err
 	}
 
 	err := jsoniter.Unmarshal([]byte(argsJSON), &args)
 
 	if err != nil {
-		return &ExecutePipelineResponse{}, &http.Response{}, err
+		return "", &http.Response{}, err
 	}
 
 	if err = s.isArgsValid(args); err != nil {
-		return &ExecutePipelineResponse{}, &http.Response{}, err
+		return "", &http.Response{}, err
 	}
 
 	application := args["application"].(string)
@@ -182,7 +183,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 	// If the value is of one of the example types, the algorithm will stringify the property before the request is sent.
 	if params, exists := args["parameters"]; exists == true {
 		if reflect.TypeOf(params).Kind() != reflect.Map {
-			return &ExecutePipelineResponse{}, &http.Response{}, fmt.Errorf("`parameters` must be an object")
+			return "", &http.Response{}, fmt.Errorf("`parameters` must be an object")
 		}
 
 		parameters := args["parameters"].(map[string]interface{})
@@ -201,7 +202,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 	// Check if artifacts are present, and if it's an array.
 	if artifacts, exists := args["artifacts"]; exists == true {
 		if reflect.TypeOf(artifacts).Kind() != reflect.Slice {
-			return &ExecutePipelineResponse{}, &http.Response{}, fmt.Errorf("`artifacts` must be an Array")
+			return "", &http.Response{}, fmt.Errorf("`artifacts` must be an Array")
 		}
 
 		artifactsSlice, _ := artifacts.([]interface{})
@@ -209,7 +210,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 		// Ideally would check the structure of each artifact so that it's correct - beyond just checking that it's an object/map
 		for _, artifact := range artifactsSlice {
 			if reflect.TypeOf(artifact).Kind() != reflect.Map {
-				return &ExecutePipelineResponse{}, &http.Response{}, fmt.Errorf("an artifact in `artifacts` must be an object")
+				return "", &http.Response{}, fmt.Errorf("an artifact in `artifacts` must be an object")
 			}
 		}
 	}
@@ -220,12 +221,18 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (interface{}, *http.Respon
 	argsBytes, err := jsoniter.Marshal(args)
 
 	if err != nil {
-		return &ExecutePipelineResponse{}, &http.Response{}, err
+		return "", &http.Response{}, err
 	}
 
 	body, res, err := s.CustomSpinCLI.ExecutePipeline(application, pipelineName, bytes.NewBuffer(argsBytes))
 
-	return body, res, err
+	if len(body.Ref) == 0 {
+		return "", res, err
+	}
+
+	refID := strings.Split(body.Ref, "/")[2]
+
+	return refID, res, err
 }
 
 // TestPipeline - Run a Spinnaker testing
@@ -270,7 +277,7 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 			return err
 		}
 		s.log.Info("Executing pipeline for test: ", testName)
-		body, _, err := s.ExecutePipeline(string(execArgs))
+		refID, _, err := s.ExecutePipeline(string(execArgs))
 
 		if err != nil {
 			s.log.Debug("Pipeline execution failed for test: ", testName)
@@ -278,11 +285,9 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 		}
 
 		// TODO: Need to check what happens in a 404 case and format an error for it.
-		if len(body.(*ExecutePipelineResponse).Ref) == 0 {
+		if len(refID) == 0 {
 			continue
 		}
-
-		refID := strings.Split(body.(*ExecutePipelineResponse).Ref, "/")[2]
 
 		var execDetails *PipelineExecutionDetailsResponse
 		s.log.Info("Retrieving pipeline details for test: ", testName)
@@ -290,7 +295,9 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 
 		if execDetails.Status == PipelineRunning {
 			s.log.Info("Waiting for pipeline to finish for test: ", testName)
-			execDetails, _, err = s.WaitForPipelineRunEnd(refID)
+
+			// Hardcoded 50 timeout.
+			execDetails, _, err = s.waitForPipelineToFinish(refID, 50)
 			if err != nil {
 
 				testErrors[testName] = append(testErrors[testName], fmt.Errorf("max timed out reached for test: '%s' with errors: %w", testName, err).Error())
@@ -343,13 +350,30 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 	return nil
 }
 
-// WaitForPipelineRunEnd - Wait for the pipeline to finish running.
+// WaitForPipelineToFinish - Wait for the pipeline to finish running.
 // This call uses sleeps and is a blocking call.
-func (s *SpinClient) WaitForPipelineRunEnd(refID string) (*PipelineExecutionDetailsResponse, *http.Response, error) {
+func (s *SpinClient) WaitForPipelineToFinish(refID string, timeout int) (string, *http.Response, error) {
+	execDetails, res, err := s.waitForPipelineToFinish(refID, timeout)
+
+	data, marshalErr := jsoniter.Marshal(execDetails)
+
+	if err != nil {
+		return "", res, multierror.Append(err, marshalErr)
+	}
+
+	return string(data), res, err
+}
+
+// The actual implementation for WaitForPipelineToFinish.
+// This implementation is hidden to allow internal package code to use *PipelineExecutionDetailsResponse, without exposing internal package logic.
+func (s *SpinClient) waitForPipelineToFinish(refID string, timeout int) (*PipelineExecutionDetailsResponse, *http.Response, error) {
 	var errors error
 
+	// Simple reverse
+	tries := int(math.Floor(math.Sqrt(float64(timeout * 2))))
+
 	retryConfig := retry.Config{
-		Tries: 50,
+		Tries: tries,
 		// Linear regresion, wait for the the amount of seconds that this "try" matches.
 		// I.E. wait 1 second, 2 seconds, 3 seconds.... etc...
 		DelayFunc: func(try int) time.Duration { return time.Duration(time.Second * time.Duration(try)) },
