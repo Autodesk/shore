@@ -7,7 +7,7 @@ Shore (verb) is a tool used to develop deployment pipelines for different pipeli
 ## Building Shore
 
 ```bash
-git clone git@github.com:***REMOVED***shore.git
+git clone git@github.com:forge-cd-service/shore.git
 
 export GOPRIVATE="github.com"
 export GOPROXY="https://:@***REMOVED***/***REMOVED***/gocenter/"
@@ -45,9 +45,11 @@ Instead the framework will try to provide known good values for a specific backe
 
 ### Tools
 
-The framework will provide a few packages and functions OOTB for customer's to consume.
+The framework will provide a few packages and functions for customer's to consume.
 
 These packages will be made available through the common resources and identified at runtime.
+
+To get these common resources, we recommend using [Jsonnet-Bundler](https://github.com/jsonnet-bundler/jsonnet-bundler/)
 
 # Release
 

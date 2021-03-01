@@ -1,5 +1,6 @@
 # Go specific
 vendor/*
+examples/*/vendor/
 !vendor/modules.txt
 
 # IDE Specific

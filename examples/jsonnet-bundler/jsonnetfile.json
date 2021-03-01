@@ -1,0 +1,24 @@
+{
+  "version": v0.0.1,
+  "dependencies": [
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/Autodeskadsk-lib-jsonnet.git",
+          "subdir": ""
+        }
+      },
+      "version": "master"
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/Autodeskspin-lib-jsonnet.git",
+          "subdir": ""
+        }
+      },
+      "version": "v0.0.3"
+    }
+  ],
+  "legacyImports": true
+}

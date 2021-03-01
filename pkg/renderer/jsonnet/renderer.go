@@ -1,15 +1,15 @@
 package jsonnet
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/google/go-jsonnet"
+	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
+	jbV1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"golang.org/x/mod/modfile"
 )
 
 // MainFileName is the name of the entrypoint file the jsonnet renderer looks for to render a pipeline project
@@ -18,127 +18,98 @@ const MainFileName string = "main.pipeline.jsonnet"
 // ArgsFileName is the name of the arguments file the jsonnet renderer looks for to pass to the pipeline as TLA veriables.
 const ArgsFileName string = "render"
 
+// ShareLibsPath - the path that jsonnet should look into when looking for shared libraries.
+//
+// Designed to work with - https://github.com/jsonnet-bundler/jsonnet-bundler/
+const ShareLibsPath string = "vendor"
+
+const JsonnetFileName string = "jsonnetfile.json"
+
 // Jsonnet - A Jsonnet renderer instance.
 // The struct  holds the required parameters to render a standard shore pipeline.
 type Jsonnet struct {
 	renderer.Renderer
-	VM  *jsonnet.VM
-	FS  afero.Fs
-	log logrus.FieldLogger
+	vm           *jsonnet.VM
+	fs           afero.Fs
+	log          logrus.FieldLogger
+	fileImporter jsonnet.Importer
 }
 
 // NewRenderer - Create new instance of the JSONNET renderer.
 func NewRenderer(fs afero.Fs, logger logrus.FieldLogger) *Jsonnet {
-	return &Jsonnet{VM: jsonnet.MakeVM(), FS: fs, log: logger}
+	return &Jsonnet{vm: jsonnet.MakeVM(), fs: fs, log: logger}
 }
 
 // Render - Render the code with the VM.
 func (j *Jsonnet) Render(projectPath string, renderArgs string) (string, error) {
 	renderFile := filepath.Join(projectPath, MainFileName)
 	// TODO implement lazy loading
-	codeBytes, err := afero.ReadFile(j.FS, renderFile)
+	codeBytes, err := afero.ReadFile(j.fs, renderFile)
 
 	if err != nil {
 		return "", err
 	}
 
-	fileImporter, err := j.getFileImporter(projectPath)
+	jbFile, err := j.loadJsonnetBundlerFile(projectPath)
+
+	if err != nil {
+		return "", err
+	}
+
+	j.fileImporter, err = GetFileImporter(projectPath, jbFile)
 
 	if err != nil {
 		return "", err
 	}
 
 	// Always include params, even if they are empty
-	j.VM.TLACode("params", renderArgs)
-	j.VM.Importer(fileImporter)
+	j.vm.TLACode("params", renderArgs)
+	j.vm.Importer(j.fileImporter)
 	// Currently adds the local `sponnet instance` to be available from `sponnet/*.libsonnet`
-	return j.VM.EvaluateSnippet(renderFile, string(codeBytes))
+	return j.vm.EvaluateSnippet(renderFile, string(codeBytes))
 }
 
-func (j *Jsonnet) getFileImporter(projectPath string) (*jsonnet.FileImporter, error) {
+// A compliant wrapper implementing jsonnetfile.Load but using `Afero` instrad of `ioutil`.
+func (j *Jsonnet) loadJsonnetBundlerFile(path string) (jbV1.JsonnetFile, error) {
+	bytes, err := afero.ReadFile(j.fs, path)
+	if err != nil {
+		return jbV1.New(), err
+	}
+
+	return jsonnetfile.Unmarshal(bytes)
+}
+
+// GetFileImporter - Get the Jsonnet File Import customized to the Jsonnet Bundler type.
+func GetFileImporter(projectPath string, jbFile jbV1.JsonnetFile) (*jsonnet.FileImporter, error) {
+	libsPath := []string{}
 	fileImporter := jsonnet.FileImporter{}
 
-	sharedLibs, err := j.getSharedLibs(projectPath)
+	if jbFile.LegacyImports {
+		// Jsonnet-Bundler LegacyImports put the imported folders in the top directory with symlinks.
+		libPath := filepath.Join(projectPath, ShareLibsPath)
+		libsPath = append(libsPath, libPath)
+	} else {
+		// Jsonnet-Bundler Imports put complies to the GoMod style of artifact management (vendoring)
+		// This means we need to take an extra step to find the top level key for each shared folder.
+		libsMap := make(map[string][]string)
 
-	if _, isPathErr := err.(*os.PathError); err != nil && !isPathErr {
-		return &fileImporter, err
+		for k := range jbFile.Dependencies {
+			libPath := filepath.Join(projectPath, ShareLibsPath, k)
+			libPathSplit := strings.Split(libPath, "/")
+			libsKey := strings.Join(libPathSplit[:len(libPathSplit)-1], "/")
+
+			if len(libsMap[libsKey]) > 0 {
+				libsMap[libsKey] = append(libsMap[libsKey], k)
+			} else {
+				libsMap[libsKey] = []string{k}
+			}
+		}
+
+		for k := range libsMap {
+			libsPath = append(libsPath, k)
+		}
 	}
 
-	fileImporter.JPaths = append(fileImporter.JPaths, sharedLibs...)
+	fileImporter.JPaths = append(fileImporter.JPaths, libsPath...)
 	return &fileImporter, nil
-}
-
-func (j *Jsonnet) getSharedLibs(projectPath string) ([]string, error) {
-	var sharedLibs []string
-	var missingLibs = SharedLibsErr{}
-
-	modFile, err := j.getGomodFile(projectPath)
-
-	if err != nil {
-		return []string{}, err
-	}
-
-	commonLibPath := filepath.Join(projectPath, "vendor")
-
-	for _, requirement := range modFile.Require {
-		libName := strings.Split(requirement.Mod.Path, "/")
-		libNameSlice := libName[0 : len(libName)-1]
-		libNameStr := strings.Join(libNameSlice, "/")
-
-		libPath := filepath.Join(commonLibPath, libNameStr)
-		err := j.libExists(requirement.Mod.Path, libPath)
-
-		if err != nil {
-			missingLibs.MissingLibs = append(missingLibs.MissingLibs, err.(SharedLibErr))
-			continue
-		}
-
-		sharedLibs = append(sharedLibs, libPath)
-	}
-
-	if len(missingLibs.MissingLibs) > 0 {
-		return sharedLibs, missingLibs
-	}
-
-	return sharedLibs, nil
-}
-
-func (j *Jsonnet) getGomodFile(projectPath string) (*modfile.File, error) {
-	modFilePath := filepath.Join(projectPath, "go.mod")
-	modFileBytes, err := afero.ReadFile(j.FS, modFilePath)
-
-	if err != nil {
-		return &modfile.File{}, err
-	}
-
-	modFile, err := modfile.Parse(modFilePath, modFileBytes, nil)
-
-	if err != nil {
-		return &modfile.File{}, err
-	}
-
-	return modFile, nil
-}
-
-func (j *Jsonnet) libExists(goPath, libPath string) error {
-	exists, err := afero.DirExists(j.FS, libPath)
-
-	// In case of a weird error OS error that isn't "NOT FOUND"
-	if err != nil {
-		return SharedLibErr{
-			Require: goPath,
-			Path:    libPath,
-			Err:     err,
-		}
-	}
-
-	if exists != true {
-		return SharedLibErr{
-			Require: goPath,
-			Path:    libPath,
-			Err:     &os.PathError{Op: "open", Path: libPath, Err: afero.ErrFileNotFound},
-		}
-	}
-
-	return nil
 }
