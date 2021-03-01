@@ -2,10 +2,10 @@
 
 Documentation on the `Shore`'s tooling and libraries.
 
-
 # Concepts
 
 ## Package
+
 A package in shore is essentially shared code (Typically Jsonnet). This code can be used as is, or extended in order to best build out your pipeline.
 
 Since shore piggybacks on GoLang for package management, you can think of shore packages as go libraries which download shore files. [Read more Here](https://golang.org/ref/mod)
@@ -15,12 +15,13 @@ Each package has its own git repository and can be developed independently of an
 **Note**: Packages have a tight coupling to their supported backends and renderer. Meaning each package developed will have to be recoded/certified for additional renderers and backends.
 
 ### Using Packages
+
 Using `golang`'s built in `go mod` package manager, we can package our JSONNET code to share as either libraries or common pipelines.
 
 To require a pipeline:
 
 ```bash
-go get github.com/Autodesk/sponnet
+go get github.com/Autodesksponnet
 ```
 
 and add a new line to the `require.go` file:
@@ -31,9 +32,10 @@ and add a new line to the `require.go` file:
 package mynewpipeline
 
 import (
- _ "github.com/Autodesk/sponnet"
+ _ "github.com/Autodeskspin-fe-deployer"
 )
 ```
+
 then run:
 
 ```bash
@@ -60,11 +62,13 @@ When running `shore render` or `shore save`, the **main.pipeline.jsonnet** file 
 > TODO: Automate these steps with a single command in the future.
 
 ## Renderer
+
 Abstraction representing the templating language that will be used. We will be using `Jsonnet` by default. Each additional language will need to implement the interface:
 
 [Renderer](https://github.com/Autodeskshore/tree/master/pkg/renderer)
 
 ## Backend
+
 Abstraction representing the pipeline engine. By default, we will be supporting Spinnaker.
 
 [Backend](https://github.com/Autodeskshore/tree/master/pkg/backend)
