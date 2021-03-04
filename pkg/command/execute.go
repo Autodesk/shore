@@ -2,11 +2,14 @@ package command
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // NewExecCommand - Using a Project, Renderer & Backend, executes a pipeline pipeline.
@@ -20,14 +23,33 @@ func NewExecCommand(d *Dependencies) *cobra.Command {
 		Short: "executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			d.Logger.Info("Exec command invoked")
-			d.Logger.Debug("Getting ExecArgs `Project.GetExecArgs`")
-			execArgs, err := d.Project.GetExecArgs()
+			viper.SetConfigName("exec")
 
-			if err != nil {
-				d.Logger.Error("Getting ExecArgs `Project.GetExecArgs` FAILED")
-				return err
+			d.Logger.Info("Exec command invoked")
+
+			var payloadErr error
+
+			if viper.IsSet("payload") {
+				payloadErr = viper.ReadConfig(strings.NewReader(viper.GetString("payload")))
+			} else {
+				payloadErr = viper.ReadInConfig()
 			}
+
+			if payloadErr != nil {
+				d.Logger.Error("Failed to load the payload.")
+				return payloadErr
+			}
+
+			payload := viper.AllSettings()
+			payloadBytes, errSerialize := jsoniter.Marshal(payload)
+
+			if errSerialize != nil {
+				d.Logger.Error("Failed serialize the payload, returned an error ", errSerialize)
+				return errSerialize
+			}
+
+			// A bit of a hack, rather change this to an object later on.
+			execArgs := string(payloadBytes)
 
 			d.Logger.Debug("Calling `Backend.ExecutePipeline`")
 			refID, res, err := d.Backend.ExecutePipeline(execArgs)
@@ -69,6 +91,8 @@ func NewExecCommand(d *Dependencies) *cobra.Command {
 	cmd.Flags().BoolVarP(&withWait, "wait", "w", false, "Wait for the pipeline to finish execution")
 	cmd.Flags().BoolVarP(&withSilent, "silent", "s", false, "Do not print JSON response to STDOUT")
 	cmd.Flags().IntVarP(&waitTimeout, "timeout", "t", 60, "how long to wait (Seconds) for the pipeline to finish in Seconds. Yes Seconds.")
+	cmd.Flags().StringP("payload", "p", "", "A JSON payload string. If not provided the exec.[json/yml/yaml] file is used.")
+	viper.BindPFlag("payload", cmd.Flags().Lookup("payload"))
 
 	return cmd
 }

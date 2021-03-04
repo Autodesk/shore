@@ -40,6 +40,9 @@ func init() {
 	// TODO: Add global validations to init.
 	// cobra.OnInitialize()
 	viper.AutomaticEnv()
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$SHORE_PROJECT_PATH")
+
 	fs := afero.NewOsFs()
 	logger = logrus.New()
 

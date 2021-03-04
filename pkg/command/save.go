@@ -2,19 +2,37 @@ package command
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // NewSaveCommand - Using a Project, Renderer & Backend, renders and saves a pipeline.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
 func NewSaveCommand(d *Dependencies) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "save",
 		Short: "save the pipeline",
 		Long:  "Using the main file configured by the renderer save the pipeline (or pipelines)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			viper.SetConfigName("render")
+
 			d.Logger.Info("Calling save pipeline")
+
+			var valuesErr error
+
+			if viper.IsSet("values") {
+				valuesErr = viper.ReadConfig(strings.NewReader(viper.GetString("render-values")))
+			} else {
+				valuesErr = viper.ReadInConfig()
+			}
+
+			if valuesErr != nil {
+				d.Logger.Error("Failed to load values.")
+				return valuesErr
+			}
+
 			pipeline, err := Render(d)
 
 			if err != nil {
@@ -34,4 +52,9 @@ func NewSaveCommand(d *Dependencies) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringP("render-values", "r", "", "A JSON string for the render. If not provided the render.[json/jyml/yaml] file is used.")
+	viper.BindPFlag("render-values", cmd.Flags().Lookup("render-values"))
+
+	return cmd
 }
