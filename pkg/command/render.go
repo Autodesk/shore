@@ -3,18 +3,36 @@ package command
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // NewRenderCommand - A Cobra wrapper for the common Render function.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
 func NewRenderCommand(d *Dependencies) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "render",
 		Short: "render a pipeline",
 		Long:  "Walk through the `pipelines` directory, renderer the pipelines and output to STDOUT",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			viper.SetConfigName("render")
+
+			var valuesErr error
+
+			if viper.IsSet("values") {
+				valuesErr = viper.ReadConfig(strings.NewReader(viper.GetString("values")))
+			} else {
+				valuesErr = viper.ReadInConfig()
+			}
+
+			if valuesErr != nil {
+				d.Logger.Error("Failed to load values.")
+				return valuesErr
+			}
+
 			pipeline, err := Render(d)
 
 			if err != nil {
@@ -25,6 +43,11 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringP("values", "r", "", "A JSON string for the render. If not provided the render.[json/jyml/yaml] file is used.")
+	viper.BindPFlag("values", cmd.Flags().Lookup("values"))
+
+	return cmd
 }
 
 // Render - Using a Project & Renderer, renders the pipeline.
@@ -42,15 +65,20 @@ func Render(d *Dependencies) (string, error) {
 
 	d.Logger.Debug("GetProjectPath returned ", projectPath)
 
-	d.Logger.Debug("GetRenderArgs")
-	renderArgs, err := d.Project.GetRenderArgs()
+	renderArgs := ""
+
+	values := viper.AllSettings()
+	valuesBytes, err := jsoniter.Marshal(values)
 
 	if err != nil && !os.IsNotExist(err) {
-		d.Logger.Error("GetRenderArgs returned an error ", err)
+		d.Logger.Error("Renderer values could not be loaded, returned an error ", err)
 		return "", err
 	}
 
-	d.Logger.Debug("GetRenderArgs returned ", renderArgs)
+	// A bit of a hack, rather change this to an object later on.
+	renderArgs = string(valuesBytes)
+
+	d.Logger.Debug("Args returned:\n", renderArgs)
 
 	d.Logger.Info("calling Renderer.Render with projectPath ", projectPath, "and renderArgs ", renderArgs)
 	pipelineJSON, err := d.Renderer.Render(projectPath, renderArgs)

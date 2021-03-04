@@ -5,11 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 type Project struct {
@@ -54,76 +52,6 @@ func (p *Project) GetProjectPath() (string, error) {
 	}
 
 	return projectPath, err
-}
-
-// GetRenderArgs returns the contents of the Render Args file.
-func (p *Project) GetRenderArgs() (string, error) {
-	// This method causes a Marshal->UnMarshal
-	// ReMarshaling here makes the code easier to follow but hurts performance.
-	p.Log.Debug("`GetRenderArgs` was called")
-	return p.readConfigFile("render")
-}
-
-// GetExecArgs returns the contents of the Exec Args file.
-func (p *Project) GetExecArgs() (string, error) {
-	// This method causes a Marshal->UnMarshal
-	// ReMarshaling here makes the code easier to follow but hurts performance.
-	p.Log.Debug("`GetExecArgs` was called")
-	return p.readConfigFile("exec")
-}
-
-// GetTestConfig returns the contents of the Test Config file.
-func (p *Project) GetTestConfig() (string, error) {
-	// This method causes a Marshal->UnMarshal
-	// ReMarshaling here makes the code easier to follow but hurts performance.
-	p.Log.Debug("`GetTestConfig` was called")
-	return p.readConfigFile("E2E")
-}
-
-// The same entrypoint for all readConfigFile data.
-func (p *Project) readConfigFile(filename string) (string, error) {
-	p.Log.Debug("`readConfigFile` was called")
-	argsData := make(map[interface{}]interface{})
-
-	projectPath, err := p.GetProjectPath()
-
-	if err != nil {
-		p.Log.Error("`readConfigFile` failed with error", err)
-		return "", err
-	}
-
-	for _, extension := range []string{"json", "yaml", "yml"} {
-		p.Log.Debug("Looking for file extension for filename ", filename, extension)
-		filepath := filepath.Join(projectPath, fmt.Sprintf("%s.%s", filename, extension))
-		exists, err := afero.Exists(p.FS, filepath)
-
-		if err != nil || !exists {
-			continue
-		}
-		p.Log.Debug("reading file", filepath)
-		argsBytes, err := afero.ReadFile(p.FS, filepath)
-
-		if err != nil {
-			return "", err
-		}
-		// Validate that the contents are valid JSON/YAML
-		err = yaml.Unmarshal(argsBytes, &argsData)
-
-		if err != nil {
-			return "", err
-		}
-		// Turn the data back to a []byte to pass back as a string.
-		args, err := jsoniter.Marshal(argsData)
-
-		if err != nil {
-			return "", err
-		}
-
-		return string(args), nil
-	}
-
-	// No file was found.
-	return "", &os.PathError{Op: "open", Path: fmt.Sprintf("%s.[json|yaml|yml]", filename), Err: os.ErrNotExist}
 }
 
 // WriteFile write a file to the project path

@@ -5,9 +5,18 @@ import (
 	"testing"
 
 	"github.com/Autodeskshore/pkg/project"
+	log "github.com/sirupsen/logrus"
+	testLog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
+
+var Logger *log.Logger
+
+func init() {
+	Logger, _ = testLog.NewNullLogger()
+	Logger.SetLevel(log.DebugLevel)
+}
 
 func TestIsValidGoVersion(t *testing.T) {
 	// Given
