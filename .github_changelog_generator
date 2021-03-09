@@ -1,0 +1,11 @@
+user=forge-cd-services
+project=shore
+github-site=https://github.com
+github-api=https://github.com/api/v3/
+pull-requests=false
+release-branch=master
+release-url=https://github.com/Autodeskshore/releases/tag/%s
+unreleased=true
+http_cache=false
+add-sections={"documentation":{"prefix":"**Documentation updates:**","labels":["documentation"]}}
+exclude-labels='duplicate,question,invalid,wontfix'
