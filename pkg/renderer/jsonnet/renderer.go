@@ -1,6 +1,7 @@
 package jsonnet
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -52,7 +53,8 @@ func (j *Jsonnet) Render(projectPath string, renderArgs string) (string, error) 
 
 	jbFile, err := j.loadJsonnetBundlerFile(projectPath)
 
-	if err != nil {
+	// If the file doesn't exist, we can skip the error.
+	if err != nil && !os.IsNotExist(err) {
 		return "", err
 	}
 
@@ -71,7 +73,8 @@ func (j *Jsonnet) Render(projectPath string, renderArgs string) (string, error) 
 
 // A compliant wrapper implementing jsonnetfile.Load but using `Afero` instrad of `ioutil`.
 func (j *Jsonnet) loadJsonnetBundlerFile(path string) (jbV1.JsonnetFile, error) {
-	bytes, err := afero.ReadFile(j.fs, path)
+	jsonnetFilePath := filepath.Join(path, JsonnetFileName)
+	bytes, err := afero.ReadFile(j.fs, jsonnetFilePath)
 	if err != nil {
 		return jbV1.New(), err
 	}
