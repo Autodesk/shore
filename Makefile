@@ -8,6 +8,7 @@ setup:
 	$(shell export GOPROXY="https://:@***REMOVED***/***REMOVED***/gocenter/")
 	go mod download
 	go mod vendor
+	go mod tidy
 
 test:
 	go test ./... -race -cover -v
@@ -33,6 +34,10 @@ build-release-linux:
 
 build-release-win:
 	GOOS=windows GOARCH=amd64 go build $(LD_FLAGS) -o $(ARTIFACT_NAME)-win cmd/shore/shore.go
+
+release:
+	# Call latest go releaser script.
+	$(shell curl -sL https://git.io/goreleaser | bash)
 
 clean:
 	rm -rf shore-*

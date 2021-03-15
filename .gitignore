@@ -10,3 +10,4 @@ examples/*/vendor/
 # Project specific
 shore*
 !cmd/shore
+dist/

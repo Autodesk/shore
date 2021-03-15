@@ -1,0 +1,53 @@
+# `Shore` GoReleaser configurations.
+# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    - go mod download
+    - go mod vendor
+    - go mod tidy
+builds:
+  - main: ./cmd/shore/shore.go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+artifactories:
+  - name: production
+    mode: archive
+    target: 'https://***REMOVED***/***REMOVED***/team-shore-generic/{{ .ProjectName }}/{{ .Version }}/{{ .Os }}/{{ .Arch }}{{ if .Arm }}{{ .Arm }}{{ end }}'
+
+dockers:
+  - image_templates:
+    - "***REMOVED***/shore/{{ .ProjectName }}:latest"
+    - "***REMOVED***/shore/{{ .ProjectName }}:{{ .Tag }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^examples:'
+
+github_urls:
+  api: https://github.com/api/v3/
+  upload: https://github.com/api/uploads/
+  download: https://github.com/
+  # set to true if you use a self-signed certificate
+  skip_tls_verify: false
