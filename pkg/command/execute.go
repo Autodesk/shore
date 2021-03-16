@@ -36,8 +36,12 @@ func NewExecCommand(d *Dependencies) *cobra.Command {
 			}
 
 			if payloadErr != nil {
-				d.Logger.Error("Failed to load the payload.")
-				return payloadErr
+				if _, ok := payloadErr.(viper.ConfigFileNotFoundError); ok {
+					d.Logger.Warn(payloadErr)
+				} else {
+					d.Logger.Error("Failed to load the payload.")
+					return payloadErr
+				}
 			}
 
 			payload := viper.AllSettings()

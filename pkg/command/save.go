@@ -29,8 +29,13 @@ func NewSaveCommand(d *Dependencies) *cobra.Command {
 			}
 
 			if valuesErr != nil {
-				d.Logger.Error("Failed to load values.")
-				return valuesErr
+				if _, ok := valuesErr.(viper.ConfigFileNotFoundError); ok {
+					d.Logger.Warn(valuesErr)
+				} else {
+					d.Logger.Error("Failed to load values")
+					return valuesErr
+				}
+
 			}
 
 			pipeline, err := Render(d)
