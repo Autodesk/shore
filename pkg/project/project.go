@@ -65,7 +65,10 @@ func (p *Project) WriteFile(fileName, data string) error {
 		return err
 	}
 
-	filepath := filepath.Join(projectPath, fileName)
+	fulllFilepath := filepath.Join(projectPath, fileName)
+	parentDir := filepath.Dir(fulllFilepath)
+	// user (r/w/e), group (r/w), other (r/w)
+	p.FS.MkdirAll(parentDir, 0766)
 
-	return afero.WriteFile(p.FS, filepath, []byte(data), 0644)
+	return afero.WriteFile(p.FS, fulllFilepath, []byte(data), 0644)
 }

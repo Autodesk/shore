@@ -9,26 +9,73 @@ import (
 	"strings"
 
 	"github.com/Autodeskshore/internal/gocmd"
+	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
+	v1Dependencies "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/sirupsen/logrus"
 )
 
-var requireGoTpl = `// +build require
-// Package {{ .ShortName }} contains required external dependencies for JSONNET code.
-package {{ .ShortName }}
+var testTpl = `local deployment = import '../main.pipeline.jsonnet';
 
-{{if .Libraries}}
-import ({{range .Libraries}}
-    _ "{{.}}"{{end}}
-)
-{{end}}
+local tests = [
+  deployment({application: 'application', pipeline: 'pipeline', example_value: 'example_value'}),
+];
+
+local assertions = [
+  {application: 'application', pipeline: 'pipeline', message: "Hello example_value!"}
+];
+
+{
+  pass: tests == assertions,
+  tests: tests,
+  assertions: assertions,
+}
 `
 
-var jsonnetTpl = `
+var jsonnetTpl = `/**
+    Creates a pipeline.
+**/
+
 function(params={}) (
 	{
-		"Hello": "World!"
+		"application": params["application"],
+		"pipeline": params["pipeline"],
+		"message": "Hello %s!" % [params["example_value"]],
 	}
 )
+`
+
+var readMeTpl = `# {{ .ProjectName }}
+A {{ .Renderer }} project for {{ .Backend }}, initialized by Shore.
+`
+
+var gitIgnoreTpl = `# Go specific
+vendor/*
+!vendor/modules.txt
+
+# IDE Specific
+.vscode/
+.idea
+`
+
+var e2eTpl = `application: "{{ .ProjectName }}"
+pipeline: "{{ .ShortName }}-pipeline"
+tests:
+  "Test Success":
+    execution_args:
+      parameters:
+	  	example_value: "World"
+    assertions: []
+`
+
+var execTpl = `application: "{{ .ProjectName }}"
+pipeline: "{{ .ShortName }}-pipeline"
+parameters:
+	my_pipeline_param: "Example Value"
+`
+
+var renderTpl = `application: "{{ .ProjectName }}"
+pipeline: "{{ .ShortName }}-pipeline"
+example_value: "World"
 `
 
 // ShoreProjectInit - Common data structure to initialize a shore project.
@@ -58,55 +105,60 @@ type ProjectInitialize struct {
 /*
 Init - Initializes a shore project
 	This all or nothing method wraps all the necessary required steps to prep a shore project for a user.
-	Steps:
-		1. Creates a go project (`go mod init`)
-		2. Downloads required packages (`go get .. .. ..`)
-		3. Creates a vendor directory (`go mod vendor`)
-		4. Creates a main.pipeline.jsonnet file.
+
+	Creates the following files:
+	- README.md
+	- E2E.yml
+	- render.yml
+	- exec.yml
+	- jsonnetfile.json
+	- main.pipeline.jsonnet
+	- .gitignore
+	- tests/example_test.libsonnet
+
+	Does not run jsonnent-bundler install (`jb install`).
 */
 func (pInit *ProjectInitialize) Init(shoreInit ShoreProjectInit) error {
-	stdout, err := pInit.GoCmd.Init(shoreInit.ProjectName)
+	if err := pInit.createFileFromTemplate("README.md", readMeTpl, shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("E2E.yml", e2eTpl, shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("render.yml", renderTpl, shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("exec.yml", execTpl, shoreInit); err != nil {
+		return err
+	}
 
+	jsonnetDependencies := make(map[string]v1Dependencies.Dependency)
+	for _, libURL := range shoreInit.Libraries {
+		// Strip the protocal
+		depName := strings.Replace(libURL, "http://", "", 1)
+		depName = strings.Replace(libURL, "https://", "", 1)
+		jsonnetDependencies[depName] = *v1Dependencies.Parse("", libURL)
+
+	}
+	jsonnetFileStruct := v1.JsonnetFile{
+		LegacyImports: false,
+		Dependencies:  jsonnetDependencies,
+	}
+	jsonnetFileBytes, err := jsonnetFileStruct.MarshalJSON()
 	if err != nil {
 		return err
 	}
 
-	pInit.Log.Info(stdout)
-
-	if err := pInit.createRequireGoFile(shoreInit); err != nil {
-		return err
-	}
-
-	if len(shoreInit.Libraries) > 0 {
-		pInit.Log.Debug("Calling go with ", shoreInit.Libraries)
-		stdout, err := pInit.GoCmd.Get(shoreInit.Libraries)
-
-		if err != nil {
-			return err
-		}
-
-		if err != nil {
-			return err
-		}
-
-		pInit.Log.Info(string(stdout))
-
-		stdout, err = pInit.GoCmd.Vendor()
-
-		if err != nil {
-			return err
-		}
-
-		pInit.Log.Info(string(stdout))
-	}
-
+	pInit.Project.WriteFile("jsonnetfile.json", string(jsonnetFileBytes))
 	pInit.Project.WriteFile("main.pipeline.jsonnet", jsonnetTpl)
+	pInit.Project.WriteFile(".gitignore", gitIgnoreTpl)
+	pInit.Project.WriteFile("tests/example_test.libsonnet", testTpl)
 
 	return nil
 }
 
-func (pInit *ProjectInitialize) createRequireGoFile(shoreInit ShoreProjectInit) error {
-	t, err := template.New("require.go").Parse(requireGoTpl)
+func (pInit *ProjectInitialize) createFileFromTemplate(fileName string, fileTpl string, shoreInit ShoreProjectInit) error {
+	t, err := template.New(fileName).Parse(fileTpl)
 
 	if err != nil {
 		return err
@@ -117,7 +169,7 @@ func (pInit *ProjectInitialize) createRequireGoFile(shoreInit ShoreProjectInit) 
 		return err
 	}
 
-	pInit.Project.WriteFile("require.go", tpl.String())
+	pInit.Project.WriteFile(fileName, tpl.String())
 
 	return nil
 }
