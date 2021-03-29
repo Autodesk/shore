@@ -4,4 +4,4 @@ FROM ***REMOVED***.dev.adskengineer.net/container-hardening/alpine-hardened-min:
 LABEL maintainer="shore@autodesk.com"
 
 CMD ["shore"]
-COPY shore /use/local/bin/shore
+COPY shore /usr/local/bin/shore

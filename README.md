@@ -5,6 +5,39 @@
 
 Shore (verb) is a tool used to develop deployment pipelines for different pipeline based products like Spinnaker.
 
+## Installing shore
+
+### As a binary
+
+#### Released
+
+1. Shore released binaries can be found in archived format at shore's github releases page:  https://github.com/Autodeskshore/releases
+2. To download the binary relevant for you platform click on the file name and save the file to the disk.
+3. Un-archive, e.g. for tar.gz for Mac OS:
+
+```shell
+cd ~/Downloads
+tar -xzf shore_0.0.2_Darwin_x86_64.tar.gz -C /usr/local/bin/
+chmod +x /usr/local/bin/shore
+shore -h
+```
+
+#### Current/Nightly build
+
+1. Login to dev ***REMOVED***: `https://***REMOVED***.dev.adskengineer.net/***REMOVED***/webapp/` with your regular ADS credentials
+2. Go to shore's repository `https://***REMOVED***.dev.adskengineer.net/***REMOVED***/list/SHORE-dist/` and download the latest `master` build version
+3. Move the binary to `/usr/local/bin/shore`
+4. Update permissions `chmod +x /usr/local/bin/shore`
+
+### As a docker image
+
+1. Shore released docker images links can be found at shore's github releases page:  https://github.com/Autodeskshore/releases
+
+```shell
+docker pull ***REMOVED***/shore/shore:v0.0.2
+docker run ***REMOVED***/shore/shore:v0.0.2 -h
+```
+
 ## Building Shore
 
 ```bash
@@ -38,7 +71,7 @@ Only top level files that generate a `Pipeline` object will be rendered.
 
 The rendered output is stored in Memory and is passed on to the correct backend service provider.
 
-As of today (20 Oct 2020) only Spinnaker is supported as a backend service.
+As of today (30 Mar 2021) only Spinnaker is supported as a backend service.
 
 The framework will not validate the input before pushing to a backend as combinations may be very tricky to validate.
 
