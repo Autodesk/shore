@@ -1,4 +1,5 @@
-local pipeline = import 'sponnet/pipeline.libsonnet';
+local pipeline = import 'spin-lib-jsonnet/pipeline.libsonnet';
+local stage = import 'spin-lib-jsonnet/stage.libsonnet';
 
 function(params) (
   pipeline.Pipeline {
@@ -6,21 +7,21 @@ function(params) (
     application: params.application,
     name: params.custom_name.a.a.a,
     stages: [
-      pipeline.stages.WaitStage {
+      stage.WaitStage {
         name: 'Stage 1',
         waitTime: 1,
         skipWaitText: '${ parameters["test123"] }',
         refId: '1',
         requisiteStageRefIds: [],
       },
-      pipeline.stages.WaitStage {
+      stage.WaitStage {
         name: 'Stage 2',
         waitTime: 1,
         skipWaitText: '${ parameters["test123"] }',
         refId: '2',
         requisiteStageRefIds: ['1'],
       },
-      pipeline.stages.WaitStage {
+      stage.WaitStage {
         name: 'Stage 3',
         waitTime: 1,
         skipWaitText: '${ parameters["test123"] }',
@@ -28,10 +29,12 @@ function(params) (
         refId: '3',
         requisiteStageRefIds: ['2'],
       },
-      pipeline.stages.RunKubeJobStage {
+      stage.RunKubeJobStage {
         name: 'Test Output',
         application: 'kubernetes',
         consumeArtifactSource: "propertyFile",
+        account: 'kubernetes',
+        credentials: 'kubernetes',
         propertyFile: "test123",
         manifest: {
           apiVersion: 'batch/v1',

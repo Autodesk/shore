@@ -2,12 +2,10 @@ package command
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -23,37 +21,11 @@ func NewExecCommand(d *Dependencies) *cobra.Command {
 		Short: "executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			viper.SetConfigName("exec")
 
-			d.Logger.Info("Exec command invoked")
-
-			var payloadErr error
-
-			if viper.IsSet("payload") {
-				payloadErr = viper.ReadConfig(strings.NewReader(viper.GetString("payload")))
-			} else {
-				payloadErr = viper.ReadInConfig()
-			}
-
-			if payloadErr != nil {
-				if _, ok := payloadErr.(viper.ConfigFileNotFoundError); ok {
-					d.Logger.Warn(payloadErr)
-				} else {
-					d.Logger.Error("Failed to load the payload.")
-					return payloadErr
-				}
-			}
-
-			payload := viper.AllSettings()
-			payloadBytes, errSerialize := jsoniter.Marshal(payload)
-
-			if errSerialize != nil {
-				d.Logger.Error("Failed serialize the payload, returned an error ", errSerialize)
-				return errSerialize
-			}
+			settingsBytes, err := GetConfigFileOrFlag(d, "exec", "payload")
 
 			// A bit of a hack, rather change this to an object later on.
-			execArgs := string(payloadBytes)
+			execArgs := string(settingsBytes)
 
 			d.Logger.Debug("Calling `Backend.ExecutePipeline`")
 			refID, res, err := d.Backend.ExecutePipeline(execArgs)

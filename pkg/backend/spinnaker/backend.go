@@ -311,7 +311,8 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 
 		for _, stage := range execDetails.Stages {
 			stageName := stage["name"].(string)
-			assetion, exists := test.Assertions[stageName]
+			// Due to viper's handling of cases sensitivity, we need to lowercase the name here.
+			assetion, exists := test.Assertions[strings.ToLower(stageName)]
 
 			if !exists {
 				testErrors[testName] = append(testErrors[testName], fmt.Sprintf("missing assertion for stage %s", stageName))

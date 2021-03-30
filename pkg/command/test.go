@@ -3,9 +3,7 @@ package command
 import (
 	"fmt"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 /*
@@ -21,21 +19,10 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 		Short: "run the test suite on a remotely saved pipeline",
 		Long:  "Using the E2E.yaml file run a full test-suite on the pipeline stored in a specific backend",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			viper.SetConfigName("E2E")
-
-			err := viper.ReadInConfig()
+			testSettingsBytes, err := GetConfigFileOrFlag(d, "E2E", "")
 
 			if err != nil {
-				d.Logger.Error("Failed to load the E2E config.")
 				return err
-			}
-
-			testSettings := viper.AllSettings()
-			testSettingsBytes, errSerialize := jsoniter.Marshal(testSettings)
-
-			if errSerialize != nil {
-				d.Logger.Error("Failed serialize the E2E config, returned an error ", errSerialize)
-				return errSerialize
 			}
 
 			// A bit of a hack, rather change this to an object later on.

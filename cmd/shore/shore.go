@@ -46,6 +46,8 @@ func init() {
 	fs := afero.NewOsFs()
 	logger = logrus.New()
 
+	viper.SetFs(fs)
+
 	commonDependencies := &command.Dependencies{
 		Project:  project.NewShoreProject(fs, logger),
 		Renderer: jsonnet.NewRenderer(fs, logger),

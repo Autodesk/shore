@@ -3,9 +3,7 @@ package command
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -18,26 +16,15 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 		Short: "render a pipeline",
 		Long:  "Walk through the `pipelines` directory, renderer the pipelines and output to STDOUT",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			viper.SetConfigName("render")
 
-			var valuesErr error
+			settingsBytes, err := GetConfigFileOrFlag(d, "render", "values")
 
-			if viper.IsSet("values") {
-				valuesErr = viper.ReadConfig(strings.NewReader(viper.GetString("values")))
-			} else {
-				valuesErr = viper.ReadInConfig()
+			if err != nil && !os.IsNotExist(err) {
+				d.Logger.Error("Renderer values could not be loaded, returned an error ", err)
+				return err
 			}
 
-			if valuesErr != nil {
-				if _, ok := valuesErr.(viper.ConfigFileNotFoundError); ok {
-					d.Logger.Warn(valuesErr)
-				} else {
-					d.Logger.Error("Failed to load values")
-					return valuesErr
-				}
-			}
-
-			pipeline, err := Render(d)
+			pipeline, err := Render(d, settingsBytes)
 
 			if err != nil {
 				return err
@@ -48,14 +35,14 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringP("values", "r", "", "A JSON string for the render. If not provided the render.[json/jyml/yaml] file is used.")
+	cmd.Flags().StringP("values", "r", "", "A JSON string for the render. If not provided the render.[json/yml/yaml] file is used.")
 	viper.BindPFlag("values", cmd.Flags().Lookup("values"))
 
 	return cmd
 }
 
 // Render - Using a Project & Renderer, renders the pipeline.
-func Render(d *Dependencies) (string, error) {
+func Render(d *Dependencies, settings []byte) (string, error) {
 	// TODO: For future DevX, aggregate errors and return them together.
 	d.Logger.Info("Render function started")
 
@@ -69,22 +56,12 @@ func Render(d *Dependencies) (string, error) {
 
 	d.Logger.Debug("GetProjectPath returned ", projectPath)
 
-	renderArgs := ""
-
-	values := viper.AllSettings()
-	valuesBytes, err := jsoniter.Marshal(values)
-
-	if err != nil && !os.IsNotExist(err) {
-		d.Logger.Error("Renderer values could not be loaded, returned an error ", err)
-		return "", err
-	}
-
 	// A bit of a hack, rather change this to an object later on.
-	renderArgs = string(valuesBytes)
+	renderArgs := string(settings)
 
 	d.Logger.Debug("Args returned:\n", renderArgs)
 
-	d.Logger.Info("calling Renderer.Render with projectPath ", projectPath, "and renderArgs ", renderArgs)
+	d.Logger.Info("calling Renderer.Render with projectPath ", projectPath, " and renderArgs ", renderArgs)
 	pipelineJSON, err := d.Renderer.Render(projectPath, renderArgs)
 
 	if err != nil {
