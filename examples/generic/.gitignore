@@ -1,6 +1,0 @@
-# Go specific
-vendor/*
-!vendor/modules.txt
-
-# IDE Specific
-.vscode/

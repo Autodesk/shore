@@ -6,6 +6,7 @@ examples/*/vendor/
 # IDE Specific
 .vscode/
 .idea
+__debug_bin
 
 # Project specific
 shore*
