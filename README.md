@@ -87,9 +87,9 @@ To get these common resources, we recommend using [Jsonnet-Bundler](https://gith
 
 # Release
 
-[Jenkins Job](https://master-11.***REMOVED***/job/***REMOVED***job/shore/)
+[Jenkins Job](https://***REMOVED***.***REMOVED***/job/forge-cd-services/job/shore/)
 
-For `master` branch merges the [`Jenkins`]('./Jenkinsfile') will create a new file in [Artifactory](https://***REMOVED***.dev.adskengineer.net/***REMOVED***/webapp/#/artifacts/browse/tree/General/SHORE-dist)
+For `master` branch merges the [`Jenkinsfile`](Jenkinsfile) will create a new file in [Artifactory](https://***REMOVED***.dev.adskengineer.net/***REMOVED***/webapp/#/artifacts/browse/tree/General/SHORE-dist)
 
 The format is `shore-${version}-${branch_name}-${build_number}-${architecture}`.
 
