@@ -63,14 +63,14 @@ tests:
   "Test Success":
     execution_args:
       parameters:
-	  	example_value: "World"
-    assertions: []
+        my_pipeline_param: "Test Parameter"
+    assertions: { }
 `
 
 var execTpl = `application: "{{ .ProjectName }}"
 pipeline: "{{ .ShortName }}-pipeline"
 parameters:
-	my_pipeline_param: "Example Value"
+  my_pipeline_param: "Example Value"
 `
 
 var renderTpl = `application: "{{ .ProjectName }}"
