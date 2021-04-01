@@ -84,6 +84,11 @@ func isExpectedOutput(expectedOutput, outputs map[string]interface{}, stageName 
 	var errors []string
 	localOutputs := make(map[string]interface{})
 
+	// No exepected output, no need to check anything.
+	if expectedOutput == nil {
+		return nil
+	}
+
 	for k := range expectedOutput {
 		output, exists := outputs[k]
 
