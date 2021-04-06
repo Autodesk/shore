@@ -77,31 +77,6 @@ func TestIsValidGoVersionReallyBrokenVersion(t *testing.T) {
 	assert.Error(t, err)
 }
 
-type MockGoCmd struct {
-	Dir string
-	Env []string
-}
-
-func (m *MockGoCmd) Init(name string) (string, error) {
-	return "", nil
-}
-
-func (m *MockGoCmd) Get(packages []string) (string, error) {
-	return "", nil
-}
-
-func (m *MockGoCmd) Vendor() (string, error) {
-	return "", nil
-}
-
-func (m *MockGoCmd) Version() (string, error) {
-	return "", nil
-}
-
-type MockGoCmdSuccess struct {
-	MockGoCmd
-}
-
 func TestInitSuccess(t *testing.T) {
 	// Given
 	localFs := afero.NewMemMapFs()
@@ -114,8 +89,7 @@ func TestInitSuccess(t *testing.T) {
 	}
 
 	pInit := project.ProjectInitialize{
-		Log:   Logger,
-		GoCmd: &MockGoCmd{},
+		Log: Logger,
 		Project: project.Project{
 			FS:   localFs,
 			Log:  Logger,
