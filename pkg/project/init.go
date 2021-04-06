@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autodeskshore/internal/gocmd"
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	v1Dependencies "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/sirupsen/logrus"
@@ -98,7 +97,6 @@ func (s ShoreProjectInit) ShortName() string {
 
 type ProjectInitialize struct {
 	Log     logrus.FieldLogger
-	GoCmd   gocmd.GoWrapper
 	Project Project
 }
 

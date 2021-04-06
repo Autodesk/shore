@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Autodeskshore/internal/gocmd"
 	"github.com/Autodeskshore/pkg/project"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
@@ -63,20 +62,6 @@ func NewProjectInitCommand(d *Dependencies) *cobra.Command {
 		Use:   "init",
 		Short: "Initialize a new shore project",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			path, err := d.Project.GetProjectPath()
-
-			if err != nil {
-				return err
-			}
-
-			goCmd := gocmd.NewGoCmd(path)
-
-			if version, err := goCmd.Version(); err != nil {
-				if isValid, err := project.IsValidGoVersion(string(version)); isValid != true && err != nil {
-					return err
-				}
-			}
-
 			shoreProjectInit, err := getShoreInitValues()
 
 			if err != nil {
@@ -85,7 +70,6 @@ func NewProjectInitCommand(d *Dependencies) *cobra.Command {
 
 			pInit := &project.ProjectInitialize{
 				Log:     d.Logger,
-				GoCmd:   goCmd,
 				Project: *d.Project,
 			}
 
