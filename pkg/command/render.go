@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,7 +18,7 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 
 			settingsBytes, err := GetConfigFileOrFlag(d, "render", "values")
 
-			if err != nil && !os.IsNotExist(err) {
+			if _, ok := err.(viper.ConfigFileNotFoundError); err != nil && !ok {
 				d.Logger.Error("Renderer values could not be loaded, returned an error ", err)
 				return err
 			}
