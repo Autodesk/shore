@@ -68,7 +68,7 @@ CI/CD solutions struggle with testing and best practices.
 This is emphasized by open Github and available tooling.
 
 * [Jenkins Unit Testing](https://github.com/jenkinsci/JenkinsPipelineUnit)
-* [Tekton Testsing tools issue](https://github.com/tektoncd/pipeline/issues/1289)
+* [Tekton Testing tools issue](https://github.com/tektoncd/pipeline/issues/1289)
 * [Tekton debugging tools issue](https://github.com/tektoncd/pipeline/issues/2069)
 
 Spinnaker doesn't have open issues on the matter ([spinnaker GH issues](https://github.com/spinnaker/spinnaker/issues)).

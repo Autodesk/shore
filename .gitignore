@@ -10,5 +10,7 @@ __debug_bin
 
 # Project specific
 shore*
+!docs/**/shore*
+!examples/**/shore*
 !cmd/shore
 dist/

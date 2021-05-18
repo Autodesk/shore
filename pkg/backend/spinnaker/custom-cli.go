@@ -73,11 +73,6 @@ func (cli *CustomSpinClient) Get(url string, args io.Reader) ([]byte, *http.Resp
 	return cli.Do(req)
 }
 
-// ExecutePipelineResponse - Response
-type ExecutePipelineResponse struct {
-	Ref string
-}
-
 // CustomCliError - an error wrapper for the Spinnaker API errors
 type CustomCliError struct {
 	PipelineName    string
@@ -113,6 +108,11 @@ func NewCustomCliError(pipelineName string, application string, res *http.Respon
 		StatusCode:      res.StatusCode,
 		Err:             err,
 	}
+}
+
+// ExecutePipelineResponse - Spinnaker Execution Response which contains the RefID to a Spinnaker Pipeline Execution.
+type ExecutePipelineResponse struct {
+	Ref string
 }
 
 // ExecutePipeline calls the POST endpoint of a pipeline to execute it
