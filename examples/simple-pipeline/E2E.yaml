@@ -1,0 +1,55 @@
+application: test1test2test3
+pipeline: simple-pipeline-test
+tests:
+  "Test Success":
+    execution_args:
+      parameters:
+        a:
+          a:
+            a: "aaa"
+    assertions:
+      "stage 1":
+        expected_status: succeeded
+        expected_output:
+          data: 123
+      "stage 2":
+        expected_status: succeeded
+        expected_output: {}
+      "stage 3":
+        expected_status: succeeded
+        expected_output: {}
+  "Test Failure":
+    execution_args:
+      parameters:
+        b: "b"
+    assertions:
+      "stage 1":
+        expected_status: terminal
+        expected_output: {}
+      "stage 2":
+        expected_status: terminal
+        expected_output: {}
+      "stage 3":
+        expected_status: terminal
+        expected_output: {}
+  "Test_Outputs":
+    execution_args:
+      parameters:
+        b: "b"
+    assertions:
+      "stage 1":
+        expected_status: succeeded
+        expected_output: {}
+      "stage 2":
+        expected_status: succeeded
+        expected_output: {}
+      "stage 3":
+        expected_status: terminal
+        expected_output: {}
+      "test output":
+        expected_status: succeeded
+        expected_output: {
+          "test": "TEST",
+          "output": "OUTPUT",
+          "something": "SOMETHINGELSE"
+        }

@@ -1,0 +1,29 @@
+# This file contains values that are sent to the backend when performing an `exec` command.
+# The schema and values are `backend` dependent.
+
+# Here we have an Object that conforms to the Spinnaker API `ExecutePipeline` schema.
+pipeline: simple-pipeline-test
+application: test1test2test3
+parameters:
+  testMap:
+    a: a
+    b: b
+  testList:
+    - this
+    - a
+    - data
+    - 1
+    - 2
+    - asd
+    - asd: asd
+  testListMap:
+    - this: this
+    - a: a
+    - data: data
+  testBool: true
+  testInt: 1
+  testString: "abc123"
+artifacts:
+  - type: "custom/object"
+    name: "shore-artifact"
+    reference: "potato"
