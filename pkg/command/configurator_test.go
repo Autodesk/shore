@@ -1,82 +1,68 @@
 package command_test
 
 import (
-	"fmt"
-	"os"
-	"runtime"
+	"path"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/backend/spinnaker"
+	integ "github.com/Autodeskshore/integration_tests"
 	"github.com/Autodeskshore/pkg/command"
-	"github.com/Autodeskshore/pkg/project"
-	"github.com/Autodeskshore/pkg/renderer/jsonnet"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
-var Deps *command.Dependencies
-var tmpDir string
-
-func init() {
-	// Move the working dir to /tmp since we may hit the local file system by accident.
-	tmpDir = "/tmp"
-	if runtime.GOOS == "darwin" {
-		tmpDir = "/private/tmp"
-	}
-
-	os.Chdir(tmpDir)
-	fs := afero.NewMemMapFs()
-	logger, _ := test.NewNullLogger()
-
-	Deps = &command.Dependencies{
-		Project:  project.NewShoreProject(fs, logger),
-		Renderer: jsonnet.NewRenderer(fs, logger),
-		Backend:  spinnaker.NewClient(logger),
-		Logger:   logger,
-	}
-}
+var testPath string = "/test"
 
 func TestFailsWithMissingConfig(t *testing.T) {
-	// Test
-	_, err := command.GetConfigFileOrFlag(Deps, "render", "values")
-	// Assert
-	assert.NotNil(t, err)
+	integ.SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Test
+		_, err := command.GetConfigFileOrFlag(deps, "render", "values")
+		expectedErrMessage := "Config File \"render\" Not Found in \"[/test]\""
+		// Assert
+		assert.NotNil(t, err)
+		assert.Equal(t, expectedErrMessage, err.Error())
+
+	})
 }
 
 func TestReadConfigFile(t *testing.T) {
-	// Given
-	data := `{"a":"a"}`
-	afero.WriteFile(Deps.Project.FS, fmt.Sprintf("%v/render.json", tmpDir), []byte(data), 0644)
-	// Test
-	values, err := command.GetConfigFileOrFlag(Deps, "render", "values")
-	// Assert
-	assert.Nil(t, err)
-	assert.Equal(t, data, string(values))
+	integ.SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Given
+		renderConfig := `{"a":"a"}`
+		afero.WriteFile(deps.Project.FS, path.Join(testPath, "render.json"), []byte(renderConfig), 0644)
+		// Test
+		values, err := command.GetConfigFileOrFlag(deps, "render", "values")
+		// Assert
+		assert.Nil(t, err)
+		assert.Equal(t, renderConfig, string(values))
+	})
 }
 
 func TestViperFlag(t *testing.T) {
-	// Given
-	data := `{"b":"b"}`
-	viper.Set("values", data)
-	// Test
-	values, err := command.GetConfigFileOrFlag(Deps, "render", "values")
-	// Assert
-	assert.Nil(t, err)
-	assert.Equal(t, data, string(values))
+	integ.SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Given
+		renderConfig := `{"b":"b"}`
+		viper.Set("values", renderConfig)
+		// Test
+		values, err := command.GetConfigFileOrFlag(deps, "render", "values")
+		// Assert
+		assert.Nil(t, err)
+		assert.Equal(t, renderConfig, string(values))
+	})
 }
 
 func TestViperFileFlag(t *testing.T) {
-	// Given
-	data := `{"c":"c"}`
-	path := fmt.Sprintf("%v/render2.json", tmpDir)
-	viper.Set("values", path)
+	integ.SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Given
+		renderConfig := `{"c":"c"}`
+		path := path.Join(testPath, "render2.json")
+		viper.Set("values", path)
 
-	afero.WriteFile(Deps.Project.FS, path, []byte(data), 0644)
-	// Test
-	values, err := command.GetConfigFileOrFlag(Deps, "render", "values")
-	// Assert
-	assert.Nil(t, err)
-	assert.Equal(t, string(values), data)
+		afero.WriteFile(deps.Project.FS, path, []byte(renderConfig), 0644)
+		// Test
+		values, err := command.GetConfigFileOrFlag(deps, "render", "values")
+		// Assert
+		assert.Nil(t, err)
+		assert.Equal(t, renderConfig, string(values))
+	})
 }

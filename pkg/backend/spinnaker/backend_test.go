@@ -2,7 +2,6 @@ package spinnaker
 
 import (
 	"context"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -10,68 +9,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"
-	spinGateApi "github.com/spinnaker/spin/gateapi"
 	"github.com/stretchr/testify/assert"
 )
-
-type mockApplicationControllerAPI struct{}
-
-func (a *mockApplicationControllerAPI) GetPipelineConfigUsingGET(ctx context.Context, application string, pipelineName string) (map[string]interface{}, *http.Response, error) {
-	var res map[string]interface{}
-
-	if application == "not-exists" {
-		res = map[string]interface{}{}
-	} else {
-		res = map[string]interface{}{
-			"id": "1234",
-		}
-	}
-
-	return res, &http.Response{StatusCode: http.StatusOK}, nil
-}
-
-type mockApplicationControllerAPIWithEmptyID struct{}
-
-func (a *mockApplicationControllerAPIWithEmptyID) GetPipelineConfigUsingGET(ctx context.Context, application string, pipelineName string) (map[string]interface{}, *http.Response, error) {
-	res := map[string]interface{}{}
-
-	return res, &http.Response{StatusCode: http.StatusOK}, nil
-}
-
-type mockPipelineControllerAPI struct{}
-
-func (p *mockPipelineControllerAPI) SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error) {
-	return &http.Response{StatusCode: http.StatusOK}, nil
-}
-
-func (p *mockPipelineControllerAPI) InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrID string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error) {
-	return &http.Response{StatusCode: http.StatusOK}, nil
-}
-
-type mockCustomSpinCli struct {
-	CustomSpinCLI
-}
-
-func (s *mockCustomSpinCli) ExecutePipeline(application, pipelineName string, args io.Reader) (*ExecutePipelineResponse, *http.Response, error) {
-	req, _ := http.NewRequest("POST", "url", args)
-	return &ExecutePipelineResponse{Ref: "/pipeline/1234"}, &http.Response{StatusCode: http.StatusOK, Request: req}, nil
-}
-
-func (s *mockCustomSpinCli) PipelineExecutionDetails(refID string, args io.Reader) (*PipelineExecutionDetailsResponse, *http.Response, error) {
-	return &PipelineExecutionDetailsResponse{
-		Application: "application",
-		Stages: []map[string]interface{}{
-			{
-				"name":   "name",
-				"status": "SUCCEEDED",
-				"outputs": map[string]interface{}{
-					"test": "123",
-				},
-			},
-		},
-		PipelineName: "pipeline",
-	}, &http.Response{StatusCode: http.StatusOK}, nil
-}
 
 var cli *SpinClient
 
@@ -83,10 +22,10 @@ func init() {
 
 	cli = &SpinClient{
 		log:           logger,
-		CustomSpinCLI: &mockCustomSpinCli{},
+		CustomSpinCLI: &MockCustomSpinCli{},
 		SpinCLI: &SpinCLI{
-			ApplicationControllerAPI: &mockApplicationControllerAPI{},
-			PipelineControllerAPI:    &mockPipelineControllerAPI{},
+			ApplicationControllerAPI: &MockApplicationControllerAPI{},
+			PipelineControllerAPI:    &MockPipelineControllerAPI{},
 			Context:                  context.Background(),
 		},
 	}
@@ -504,7 +443,7 @@ func TestTestingRemoteSuccess(t *testing.T) {
 				}
 			},
 			"assertions": {
-				"name": {
+				"testedname": {
 					"expected_status": "succeeded",
 					"expected_output": {
 						"test": "123"
@@ -533,7 +472,7 @@ func TestTestingRemoteNoAssertionFailed(t *testing.T) {
 				}
 			},
 			"assertions": {
-				"name": {
+				"testedname": {
 					"expected_status": "succeeded",
 					"expected_output": {
 						"test": "1234"
@@ -575,7 +514,7 @@ func TestTestingRemoteMissingExecArgs(t *testing.T) {
 	"tests": {
 		"Test Success": {
 			"assertions": {
-				"name": {
+				"testedname": {
 					"expected_status": "succeeded",
 					"expected_output": {
 						"test": "123"
@@ -598,7 +537,7 @@ func TestTestingNoApplicationFailed(t *testing.T) {
 	"tests": {
 		"Test Success": {
 			"assertions": {
-				"name": {
+				"testedname": {
 					"expected_status": "succeeded",
 					"expected_output": {
 						"test": "123"
@@ -621,7 +560,7 @@ func TestTestingNoPipelineFailed(t *testing.T) {
 	"tests": {
 		"Test Success": {
 			"assertions": {
-				"name": {
+				"testedname": {
 					"expected_status": "succeeded",
 					"expected_output": {
 						"test": "123"
