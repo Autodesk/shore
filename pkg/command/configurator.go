@@ -1,7 +1,6 @@
 package command
 
 import (
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -12,7 +11,7 @@ import (
 )
 
 func GetConfigFileOrFlag(d *Dependencies, fileName string, flagName string) ([]byte, error) {
-	dir, err := os.Getwd()
+	dir, err := d.Project.GetProjectPath()
 
 	if err != nil {
 		return nil, err
