@@ -31,6 +31,61 @@ func init() {
 	}
 }
 
+func TestValidv4UUIDOfVariantRFC1422(t *testing.T) {
+	_, err := isValidv4UUIDtypeRFC4122("642355a8-eded-4a73-9d49-2a7af7395f4a")
+	assert.Nil(t, err)
+}
+
+func TestInvalidUUID3(t *testing.T) {
+	_, err := isValidv4UUIDtypeRFC4122("a3bb189e-8bf9-3888-9912-ace4e6543002")
+	assert.NotNil(t, err)
+}
+
+func TestInvalidUUID1(t *testing.T) {
+	_, err := isValidv4UUIDtypeRFC4122("85169e50-ceb4-11eb-8382-000000000000")
+	assert.NotNil(t, err)
+}
+
+func TestInvalidLengthv4UUIDOfVariantRFC1422(t *testing.T) {
+	_, err := isValidv4UUIDtypeRFC4122("1234")
+	assert.EqualError(t, err, "invalid UUID length: 4")
+}
+
+func TestInvalidFindAndReplacePipelineNameWithFoundID(t *testing.T) {
+	stageMap := []map[string]interface{}{
+		{
+			"application": "test-source-app",
+			"pipeline":    "test-source-pipeline",
+		},
+	}
+	expectedResult := []map[string]interface{}{
+		{
+			"application": "test-source-app",
+			"pipeline":    "1234",
+		},
+	}
+	_, res := cli.findAndReplacePipelineNameWithFoundID(stageMap[0])
+	assert.Equal(t, expectedResult[0], res)
+}
+
+func TestValidFindAndReplacePipelineNameWithFoundIDInStage(t *testing.T) {
+	stageMap := []map[string]interface{}{
+		{
+			"application": "test-source-app",
+			"pipeline":    "642355a8-eded-4a73-9d49-2a7af7395f4a",
+		},
+	}
+	expectedResult := []map[string]interface{}{
+		{
+			"application": "test-source-app",
+			"pipeline":    "642355a8-eded-4a73-9d49-2a7af7395f4a",
+		},
+	}
+
+	_, res := cli.findAndReplacePipelineNameWithFoundID(stageMap[0])
+	assert.Equal(t, expectedResult[0], res)
+}
+
 func TestInternalSaveSuccessForExistingPipeline(t *testing.T) {
 	// Test
 	pipelineID, res, err := cli.savePipeline(`{"application": "test", "name": "test"}`)
@@ -207,6 +262,7 @@ func TestSaveSuccess(t *testing.T) {
 			{
 				"application": "appname",
 				"name":  "Nested pipeline stage",
+				"type": "pipeline",
 				"pipeline": {
 					"application": "appname",
 					"name": "Child pipeline 1",
@@ -214,13 +270,15 @@ func TestSaveSuccess(t *testing.T) {
 						{
 							"application": "appname",
 							"name":  "Child pipeline stage",
+							"type": "pipeline",
 							"pipeline": {
 								"application": "appname",
 								"name": "Child pipeline 2",
 								"stages": [
 									{
 										"name": "Child pipeline 2 stage",
-										"application": "appname"
+										"application": "appname",
+										"type": "pipeline"
 									}
 								]
 							}
@@ -228,13 +286,16 @@ func TestSaveSuccess(t *testing.T) {
 						{
 							"application": "appname",
 							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
 							"pipeline": {
 								"application": "appname",
 								"name": "Child pipeline 2.2",
+								"type": "pipeline",
 								"stages": [
 									{
 										"name": "Child pipeline 2.2 stage",
-										"application": "appname"
+										"application": "appname",
+										"type": "pipeline"
 									}
 								]
 							}
@@ -263,7 +324,8 @@ func TestSaveSimplePipelineSuccess(t *testing.T) {
 		"stages": [
 			 {
 					"name": "Wait",
-					"waitTime": 1
+					"waitTime": 1,
+					"type": "wait"
 			 }
 		]
  }
@@ -287,12 +349,14 @@ func TestMissingApplicationFailedSave(t *testing.T) {
 			{
 				"application": "appname",
 				"name":  "Nested pipeline stage",
+				"type": "pipeline",
 				"pipeline": {
 					"name": "Child pipeline 1",
 					"stages": [
 						{
 							"name": "Child pipeline 2 stage",
-							"application": "appname"
+							"application": "appname",
+							"type": "pipeline"
 						}
 					]
 				}
@@ -317,13 +381,15 @@ func TestMissingNameFailedSave(t *testing.T) {
 		"stages": [
 			{
 				"application": "appname",
-				"name":  "Nested pipeline stage",
+				"name": "Nested pipeline stage",
+				"type": "pipeline",
 				"pipeline": {
 					"application": "appname",
 					"stages": [
 						{
 							"name": "Child pipeline 2 stage",
-							"application": "appname"
+							"application": "appname",
+							"type": "pipeline"
 						}
 					]
 				}
@@ -349,9 +415,11 @@ func TestPipelineChildPipelineWrongApplicationFailedSave(t *testing.T) {
 			{
 				"application": "appname",
 				"name":  "Nested pipeline stage",
+				"type": "pipeline",
 				"pipeline": {
 					"application": "another appname",
 					"name": "Child pipeline 1",
+					"type": "pipeline",
 					"stages": [
 						{
 							"name": "child pipeline 1 stage"
@@ -379,9 +447,11 @@ func TestPipelineStageMissingApplicationFailedSave(t *testing.T) {
 		"stages": [
 			{
 				"name":  "Nested pipeline stage",
+				"type": "pipeline",
 				"pipeline": {
 					"application": "appname",
 					"name": "Child pipeline 1",
+					"type": "pipeline",
 					"stages": [
 						{
 							"name": "child pipeline 1 stage"
@@ -410,12 +480,14 @@ func TestPipelineStageWrongApplicationFailedSave(t *testing.T) {
 			{
 				"application": "another appname",
 				"name":  "Nested pipeline stage",
+				"type": "pipeline",
 				"pipeline": {
 					"application": "appname",
 					"name": "Child pipeline 1",
 					"stages": [
 						{
-							"name": "child pipeline 1 stage"
+							"name": "child pipeline 1 stage",
+							"type": "pipeline"
 						}
 					]
 				}
@@ -429,6 +501,269 @@ func TestPipelineStageWrongApplicationFailedSave(t *testing.T) {
 
 	// Assert
 	assert.EqualError(t, err, "'application' key value of stage of type 'pipeline' should match the one of parent pipeline 'application' value")
+}
+
+func TestPipelineSaveEmptyTriggersAndStages(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [],
+		"stages": []
+	}
+	`
+
+	// Test
+	_, err := cli.SavePipeline(pipelineString)
+
+	// Assert
+	assert.NoError(t, err)
+
+}
+
+func TestPipelineSaveTriggersAndStagesWithValidPipelineID(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [
+			{
+				"application": "test-source-app",
+				"type": "pipeline",
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a"
+			}
+		],
+		"stages": [
+			{
+				"application": "test-source-app",
+				"type": "findArtifactFromExecution",
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a"
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.SavePipeline(pipelineString)
+
+	// Assert
+	assert.NoError(t, err)
+
+}
+
+func TestPipelineSaveTriggersAndStagesWithValidPipelineIDPlusNested(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [
+			{
+				"application": "test-source-app",
+				"type": "pipeline",
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a"
+			}
+		],
+		"stages": [
+			{
+				"application": "test-source-app",
+				"type": "findArtifactFromExecution",
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a"
+			},
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Child pipeline 2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2.2",
+								"type": "pipeline",
+								"stages": [
+									{
+										"name": "Child pipeline 2.2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.SavePipeline(pipelineString)
+
+	// Assert
+	assert.NoError(t, err)
+
+}
+
+func TestPipelineSaveTriggersAndStagesAndLookupPipelineIDPlusNested(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [
+			{
+				"application": "test-source-app",
+				"type": "pipeline",
+				"pipeline": "test-source-pipeline-name"
+			}
+		],
+		"stages": [
+			{
+				"application": "test-source-app",
+				"type": "findArtifactFromExecution",
+				"pipeline": "test-source-pipeline-name"
+			},
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Child pipeline 2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2.2",
+								"type": "pipeline",
+								"stages": [
+									{
+										"name": "Child pipeline 2.2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.SavePipeline(pipelineString)
+
+	// Assert
+	assert.NoError(t, err)
+
+}
+
+func TestPipelineSaveTriggersAndStagesAndLookupPipelineID(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [
+			{
+				"application": "test-source-app",
+				"type": "pipeline",
+				"pipeline": "test-source-pipeline-name"
+			}
+		],
+		"stages": [
+			{
+				"application": "test-source-app",
+				"type": "findArtifactFromExecution",
+				"pipeline": "test-source-pipeline-name"
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.SavePipeline(pipelineString)
+
+	// Assert
+	assert.NoError(t, err)
+
+}
+
+func TestPipelineSaveTriggersAndStagesWithReplacablePipelineID(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [
+			{
+				"application": "test-source-app",
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a",
+				"type": "pipeline"
+			}
+		],
+		"stages": [
+			{
+				"name": "test-stage-name",
+				"type": "findArtifactFromExecution",
+				"application": "test-source-app",
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a"
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.SavePipeline(pipelineString)
+
+	// Assert
+	assert.NoError(t, err)
+
 }
 
 func TestTestingRemoteSuccess(t *testing.T) {

@@ -6,6 +6,7 @@ require (
 	github.com/briandowns/spinner v1.12.0
 	github.com/fatih/color v1.10.0
 	github.com/google/go-jsonnet v0.16.0
+	github.com/google/uuid v1.2.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/json-iterator/go v1.1.10
 	github.com/jsonnet-bundler/jsonnet-bundler v0.4.0
