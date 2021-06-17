@@ -18,7 +18,7 @@ import (
 // Version - Shore CLI version
 // This variable is populated during compile time with a variable substitution.
 // The variable should be a `const`, but `ldflags` can only operate on `var+string`.
-var Version = "local"
+var version = "local"
 
 var logVerbosity int
 var logger *logrus.Logger
@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 	Long:          "A Pipeline development framework for integrated pipelines.",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Version:       Version,
+	Version:       version,
 	PersistentPreRun: func(*cobra.Command, []string) {
 		logLevel := logrus.WarnLevel + logrus.Level(logVerbosity)
 		logger.SetLevel(logLevel)
