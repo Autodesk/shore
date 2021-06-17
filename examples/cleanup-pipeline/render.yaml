@@ -1,0 +1,4 @@
+# This file contains parameters passed to the rendering engine
+# It is used during development to allow changing specific parameters.
+application: test1test2test3
+pipeline_name: deploy-nginx

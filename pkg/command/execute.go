@@ -11,18 +11,18 @@ import (
 )
 
 // NewExecCommand - Using a Project, Renderer & Backend, executes a pipeline pipeline.
-func NewExecCommand(d *Dependencies) *cobra.Command {
+func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 	var withWait bool
 	var withSilent bool
 	var waitTimeout int
 
 	cmd := &cobra.Command{
 		Use:   "exec",
-		Short: "executes the pipeline",
+		Short: "Executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			settingsBytes, err := GetConfigFileOrFlag(d, "exec", "payload")
+			settingsBytes, err := GetConfigFileOrFlag(d, configPath, "payload")
 
 			// A bit of a hack, rather change this to an object later on.
 			execArgs := string(settingsBytes)

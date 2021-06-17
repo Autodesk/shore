@@ -3,6 +3,7 @@ package command
 import (
 	"fmt"
 
+	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -12,8 +13,9 @@ import (
 func NewRenderCommand(d *Dependencies) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "render",
-		Short: "render a pipeline",
-		Long:  "Walk through the `pipelines` directory, renderer the pipelines and output to STDOUT",
+		Short: "Render the pipeline",
+		Long: `Render the "main.pipeline.jsonnet" file.
+Automatically reads libraries from "vendor/". The Jsonnet-Bundler default path for libraries`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			settingsBytes, err := GetConfigFileOrFlag(d, "render", "values")
@@ -23,7 +25,7 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			pipeline, err := Render(d, settingsBytes)
+			pipeline, err := Render(d, settingsBytes, renderer.MainFileName)
 
 			if err != nil {
 				return err
@@ -41,7 +43,7 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 }
 
 // Render - Using a Project & Renderer, renders the pipeline.
-func Render(d *Dependencies, settings []byte) (string, error) {
+func Render(d *Dependencies, settings []byte, renderType renderer.RenderType) (string, error) {
 	// TODO: For future DevX, aggregate errors and return them together.
 	d.Logger.Info("Render function started")
 
@@ -61,7 +63,7 @@ func Render(d *Dependencies, settings []byte) (string, error) {
 	d.Logger.Debug("Args returned:\n", renderArgs)
 
 	d.Logger.Info("calling Renderer.Render with projectPath ", projectPath, " and renderArgs ", renderArgs)
-	pipelineJSON, err := d.Renderer.Render(projectPath, renderArgs)
+	pipelineJSON, err := d.Renderer.Render(projectPath, renderArgs, renderType)
 
 	if err != nil {
 		d.Logger.Error("Renderer.Render returned an error ", err)
