@@ -7,6 +7,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/Autodeskshore/pkg/renderer/jsonnet"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ func SetupRenderWithArgs(extension, codeFile, args string) afero.Fs {
 	localFs := afero.NewMemMapFs()
 	localFs.Mkdir(testPath, os.ModePerm)
 
-	afero.WriteFile(localFs, filepath.Join(testPath, jsonnet.MainFileName), []byte(codeFile), os.ModePerm)
+	afero.WriteFile(localFs, filepath.Join(testPath, jsonnet.RenderFiles[renderer.MainFileName]), []byte(codeFile), os.ModePerm)
 
 	if args != "" {
 		argsFile := filepath.Join(testPath, fmt.Sprintf("render.%s", extension))
@@ -40,7 +41,7 @@ function(params={})(
 	fs := SetupRenderWithArgs("json", codeFile, "")
 
 	// Test
-	res, renderErr := jsonnet.NewRenderer(fs, logrus.New()).Render(testPath, "")
+	res, renderErr := jsonnet.NewRenderer(fs, logrus.New()).Render(testPath, "", renderer.MainFileName)
 
 	// Assert
 	assert.Nil(t, renderErr)

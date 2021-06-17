@@ -11,7 +11,7 @@ Shore (verb) is a tool used to develop deployment pipelines for different pipeli
 
 #### Released
 
-1. Shore released binaries can be found in archived format at shore's github releases page:  https://github.com/Autodeskshore/releases
+1. Shore released binaries can be found in archived format at shore's github releases page:  <https://github.com/Autodeskshore/releases>
 2. To download the binary relevant for you platform click on the file name and save the file to the disk.
 3. Un-archive, e.g. for tar.gz for Mac OS:
 
@@ -31,7 +31,7 @@ shore -h
 
 ### As a docker image
 
-1. Shore released docker images links can be found at shore's github releases page:  https://github.com/Autodeskshore/releases
+1. Shore released docker images links can be found at shore's github releases page:  <https://github.com/Autodeskshore/releases>
 
 ```shell
 docker pull ***REMOVED***/shore/shore:v0.0.2
@@ -85,7 +85,7 @@ These packages will be made available through the common resources and identifie
 
 To get these common resources, we recommend using [Jsonnet-Bundler](https://github.com/jsonnet-bundler/jsonnet-bundler/)
 
-# Release
+## Release
 
 [Jenkins Job](https://***REMOVED***.***REMOVED***/job/forge-cd-services/job/shore/)
 

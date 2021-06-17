@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Autodeskshore/pkg/backend/spinnaker"
+	"github.com/Autodeskshore/pkg/cleanup_command"
 	"github.com/Autodeskshore/pkg/command"
 	"github.com/Autodeskshore/pkg/project"
 	"github.com/Autodeskshore/pkg/renderer/jsonnet"
@@ -60,8 +61,9 @@ func init() {
 	rootCmd.AddCommand(command.NewProjectCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewRenderCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewSaveCommand(commonDependencies))
-	rootCmd.AddCommand(command.NewExecCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewExecCommand(commonDependencies, "exec"))
 	rootCmd.AddCommand(command.NewTestRemoteCommand(commonDependencies))
+	rootCmd.AddCommand(cleanup_command.NewCleanupCommand(commonDependencies))
 	// Make the version easily parsable when invoking `shore --version`
 	rootCmd.SetVersionTemplate("{{.Version}}\n")
 }

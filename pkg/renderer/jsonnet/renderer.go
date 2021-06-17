@@ -13,8 +13,11 @@ import (
 	"github.com/spf13/afero"
 )
 
-// MainFileName is the name of the entrypoint file the jsonnet renderer looks for to render a pipeline project
-const MainFileName string = "main.pipeline.jsonnet"
+var RenderFiles = map[renderer.RenderType]string{
+	// MainFileName is the name of the entrypoint file the jsonnet renderer looks for to render a pipeline project
+	renderer.MainFileName:    "main.pipeline.jsonnet",
+	renderer.CleanUpFileName: "cleanup/cleanup.pipeline.jsonnet",
+}
 
 // ArgsFileName is the name of the arguments file the jsonnet renderer looks for to pass to the pipeline as TLA veriables.
 const ArgsFileName string = "render"
@@ -42,8 +45,9 @@ func NewRenderer(fs afero.Fs, logger logrus.FieldLogger) *Jsonnet {
 }
 
 // Render - Render the code with the VM.
-func (j *Jsonnet) Render(projectPath string, renderArgs string) (string, error) {
-	renderFile := filepath.Join(projectPath, MainFileName)
+func (j *Jsonnet) Render(projectPath string, renderArgs string, renderType renderer.RenderType) (string, error) {
+	renderFile := filepath.Join(projectPath, RenderFiles[renderType])
+
 	// TODO implement lazy loading
 	codeBytes, err := afero.ReadFile(j.fs, renderFile)
 
