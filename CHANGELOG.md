@@ -1,5 +1,25 @@
 # Changelog
 
+## [v0.0.5](https://github.com/Autodeskshore/releases/tag/v0.0.5) (2021-06-17)
+
+[Full Changelog](https://github.com/Autodeskshore/compare/v0.0.4...v0.0.5)
+
+**Implemented enhancements:**
+
+- Shore-CLI - Reverse Pipeline \("Destroy Command"\) [\#34](https://github.com/Autodeskshore/issues/34)
+
+**Documentation updates:**
+
+- New git tag doesn't trigger a build and CI issues [\#99](https://github.com/Autodeskshore/issues/99)
+- Implement Architecture.md file \(Tech-Implementation\) [\#92](https://github.com/Autodeskshore/issues/92)
+- Provide easy development Docker Containers [\#89](https://github.com/Autodeskshore/issues/89)
+
+**Closed issues:**
+
+- Shore project Integration testing  [\#84](https://github.com/Autodeskshore/issues/84)
+- Distribute a Docker container to run shore without installing the binary. [\#54](https://github.com/Autodeskshore/issues/54)
+- Add missing default files to `shore project init` [\#47](https://github.com/Autodeskshore/issues/47)
+
 ## [v0.0.4](https://github.com/Autodeskshore/releases/tag/v0.0.4) (2021-04-01)
 
 [Full Changelog](https://github.com/Autodeskshore/compare/v0.0.3...v0.0.4)
@@ -28,7 +48,6 @@
 
 **Closed issues:**
 
-- Add missing default files to `shore project init` [\#47](https://github.com/Autodeskshore/issues/47)
 - Shore-CLI release pipeline setup [\#24](https://github.com/Autodeskshore/issues/24)
 
 ## [v0.0.2](https://github.com/Autodeskshore/releases/tag/v0.0.2) (2021-03-14)
