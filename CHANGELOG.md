@@ -1,5 +1,26 @@
 # Changelog
 
+## [v0.0.5](https://github.com/Autodeskshore/releases/tag/v0.0.5) (2021-06-20)
+
+[Full Changelog](https://github.com/Autodeskshore/compare/v0.0.4...v0.0.5)
+
+**Implemented enhancements:**
+
+- Shore-CLI - Reverse Pipeline \("Destroy Command"\) [\#34](https://github.com/Autodeskshore/issues/34)
+- Spinnaker Backend - Get pipeline by AppName + PipelineName/PipelineID [\#31](https://github.com/Autodeskshore/issues/31)
+
+**Documentation updates:**
+
+- New git tag doesn't trigger a build and CI issues [\#99](https://github.com/Autodeskshore/issues/99)
+- Implement Architecture.md file \(Tech-Implementation\) [\#92](https://github.com/Autodeskshore/issues/92)
+- Provide easy development Docker Containers [\#89](https://github.com/Autodeskshore/issues/89)
+
+**Closed issues:**
+
+- Shore project Integration testing  [\#84](https://github.com/Autodeskshore/issues/84)
+- Distribute a Docker container to run shore without installing the binary. [\#54](https://github.com/Autodeskshore/issues/54)
+- Add missing default files to `shore project init` [\#47](https://github.com/Autodeskshore/issues/47)
+
 ## [v0.0.4](https://github.com/Autodeskshore/releases/tag/v0.0.4) (2021-04-01)
 
 [Full Changelog](https://github.com/Autodeskshore/compare/v0.0.3...v0.0.4)
@@ -75,3 +96,6 @@
 - Implement the nested pipeline save on the FW level [\#3](https://github.com/Autodeskshore/issues/3)
 - Implement a basic nested pipeline example. [\#2](https://github.com/Autodeskshore/issues/2)
 - Implement a basic managed infra example \(with either wait stages or very basic TF stages\) [\#1](https://github.com/Autodeskshore/issues/1)
+
+
+
