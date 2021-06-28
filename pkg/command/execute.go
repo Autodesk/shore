@@ -15,12 +15,16 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 	var withWait bool
 	var withSilent bool
 	var waitTimeout int
+	var withPayload string
 
 	cmd := &cobra.Command{
 		Use:   "exec",
 		Short: "Executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if withPayload != "" {
+				viper.Set("payload", withPayload)
+			}
 
 			settingsBytes, err := GetConfigFileOrFlag(d, configPath, "payload")
 
@@ -67,8 +71,7 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 	cmd.Flags().BoolVarP(&withWait, "wait", "w", false, "Wait for the pipeline to finish execution")
 	cmd.Flags().BoolVarP(&withSilent, "silent", "s", false, "Do not print JSON response to STDOUT")
 	cmd.Flags().IntVarP(&waitTimeout, "timeout", "t", 60, "how long to wait (Seconds) for the pipeline to finish in Seconds. Yes Seconds.")
-	cmd.Flags().StringP("payload", "p", "", "A JSON payload string. If not provided the exec.[json/yml/yaml] file is used.")
-	viper.BindPFlag("payload", cmd.Flags().Lookup("payload"))
+	cmd.Flags().StringVarP(&withPayload, "payload", "p", "", "A JSON payload string. If not provided the exec.[json/yml/yaml] file is used.")
 
 	return cmd
 }
