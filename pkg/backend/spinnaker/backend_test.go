@@ -570,7 +570,8 @@ func TestPipelineSaveTriggersAndStagesWithValidPipelineIDPlusNested(t *testing.T
 			{
 				"application": "test-source-app",
 				"type": "findArtifactFromExecution",
-				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a"
+				"pipeline": "642355a8-eded-4a73-9d49-2a7af7395f4a",
+				"name": "resolve them artifacts"
 			},
 			{
 				"application": "appname",
@@ -645,7 +646,8 @@ func TestPipelineSaveTriggersAndStagesAndLookupPipelineIDPlusNested(t *testing.T
 			{
 				"application": "test-source-app",
 				"type": "findArtifactFromExecution",
-				"pipeline": "test-source-pipeline-name"
+				"pipeline": "test-source-pipeline-name",
+				"name": "resolve them artifacts"
 			},
 			{
 				"application": "appname",
@@ -732,6 +734,71 @@ func TestPipelineSaveTriggersAndStagesAndLookupPipelineID(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 
+}
+
+func TestPipelineSaveWithNestedLookUp(t *testing.T) {
+	// Given
+	pipelineString := `
+	{
+		"application": "appname",
+		"name":  "test-app",
+		"triggers": [
+			{
+				"application": "test-source-app",
+				"type": "pipeline",
+				"pipeline": "test-source-pipeline-name"
+			}
+		],
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Waiting for a better tomorrow",
+										"type": "wait"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": "Finding Pipeline nested"
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	res, saveErr := cli.SavePipeline(pipelineString)
+	defer res.Body.Close()
+
+	body, bodyErr := ioutil.ReadAll(res.Body)
+
+	var pipeline map[string]interface{}
+	jsoniter.Unmarshal(body, &pipeline)
+
+	// Assert
+	assert.NoError(t, saveErr)
+	assert.NoError(t, bodyErr)
+	assert.NotNil(t, pipeline)
 }
 
 func TestPipelineSaveTriggersAndStagesWithReplacablePipelineID(t *testing.T) {

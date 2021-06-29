@@ -1,0 +1,6 @@
+# This file contains values that are sent to the backend when performing an `exec` command.
+# The schema and values are `backend` dependent.
+
+# Here we have an Object that conforms to the Spinnaker API `ExecutePipeline` schema.
+application: test1test2test3test4
+pipeline: get-pipeline-id-remote-pipeline
