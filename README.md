@@ -2,6 +2,7 @@
 
 [![Build Status](https://***REMOVED***.***REMOVED***/buildStatus/icon?job=forge-cd-services%2Fshore%2Fmaster)](https://***REMOVED***.***REMOVED***/job/forge-cd-services/job/shore/job/master/)
 [![Codacy Badge](https://codacy2.autodesk.com/project/badge/Grade/bdad496dad484a0b9da63cd19d6f30eb)](https://codacy2.autodesk.com/ghe/forge-cd-services/shore/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=forge-cd-services/shore&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://codacy2.autodesk.com/project/badge/Coverage/bdad496dad484a0b9da63cd19d6f30eb)](https://codacy2.autodesk.com/ghe/forge-cd-services/shore/dashboard?utm_source=github.com&utm_medium=referral&utm_content=forge-cd-services/shore&utm_campaign=Badge_Coverage)
 
 Shore (verb) is a tool used to develop deployment pipelines for different pipeline based products like Spinnaker.
 

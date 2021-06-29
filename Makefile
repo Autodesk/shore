@@ -11,7 +11,7 @@ setup:
 	go mod tidy
 
 test:
-	go test ./... -race -cover -v
+	go test ./... -race -cover -v -covermode=atomic -coverprofile=coverage_atomic.out
 
 build: build-osx build-linux build-win
 
@@ -40,4 +40,4 @@ release:
 	$(shell curl -sL https://git.io/goreleaser | bash)
 
 clean:
-	rm -rf shore-*
+	rm -rf shore-* coverage_*.out
