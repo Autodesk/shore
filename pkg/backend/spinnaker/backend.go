@@ -97,6 +97,11 @@ func (s *SpinClient) initializeAPI() error {
 
 func (s *SpinClient) getOtherPipelineId(application string, pipelineName string) (string, *http.Response, error) {
 	pipeline, res, err := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+
+	if !mapContainsKey(pipeline, "id") {
+		return "", res, err
+	}
+
 	return pipeline["id"].(string), res, err
 }
 
@@ -106,35 +111,45 @@ func mapContainsKey(mapInput map[string]interface{}, searchString string) bool {
 }
 
 func (s *SpinClient) findAndReplacePipelineNameWithFoundID(spinnakerObject map[string]interface{}) (bool, map[string]interface{}) {
-	if (mapContainsKey(spinnakerObject, "application")) && (mapContainsKey(spinnakerObject, "pipeline")) {
-		s.log.WithFields(logrus.Fields{"spinnaker_object": spinnakerObject}).Info("Found spinnaker object with 'application' and 'pipeline' name fields")
-		pipelineApp := spinnakerObject["application"].(string)
-		pipelineName := spinnakerObject["pipeline"].(string)
+	s.log.WithFields(logrus.Fields{"spinnaker_object": spinnakerObject}).Info("Found spinnaker object with 'application' and 'pipeline' name fields")
+	pipelineApp := spinnakerObject["application"].(string)
+	pipelineName := spinnakerObject["pipeline"].(string)
 
-		isPipelineUUID, err := isValidv4UUIDtypeRFC4122(pipelineName)
-		if !isPipelineUUID {
+	isPipelineUUID, err := isValidv4UUIDtypeRFC4122(pipelineName)
+	if !isPipelineUUID {
+		s.log.WithFields(logrus.Fields{
+			"pipeline_name": pipelineName,
+			"uuid_error":    err,
+		}).Info("Checking if provided pipeline name is not already a valid pipeline UUID, looking for existing pipeline.")
+
+		newID, res, err := s.getOtherPipelineId(pipelineApp, pipelineName)
+		newSpinnakerObject := spinnakerObject
+
+		if err != nil && res.StatusCode == 404 {
 			s.log.WithFields(logrus.Fields{
 				"pipeline_name": pipelineName,
-				"uuid_error":    err,
-			}).Info("Checking if provided pipeline name is not already a valid pipeline UUID, looking for existing pipeline.")
-			newID, _, _ := s.getOtherPipelineId(pipelineApp, pipelineName)
-			newSpinnakerObject := spinnakerObject
-			newSpinnakerObject["pipeline"] = newID
-
-			s.log.WithFields(logrus.Fields{
-				"pipeline_name": pipelineName,
-				"pipeline_id":   newID,
 				"application":   pipelineApp,
-			}).Info("Replacing pipeline name with valid pipeline UUID from specified application.")
-
-			return true, newSpinnakerObject
+				"status code":   res.StatusCode,
+			}).Warn("Failed to find a matching pipeline")
+			newSpinnakerObject["pipeline"] = nil
 		} else {
-			s.log.WithFields(logrus.Fields{
-				"pipeline_name": pipelineName,
-				"application":   pipelineApp,
-			}).Info("Provided pipeline name is already a valid pipeline UUID")
+			newSpinnakerObject["pipeline"] = newID
 		}
+
+		s.log.WithFields(logrus.Fields{
+			"pipeline_name": pipelineName,
+			"pipeline_id":   newID,
+			"application":   pipelineApp,
+		}).Info("Replacing pipeline name with valid pipeline UUID from specified application.")
+
+		return true, newSpinnakerObject
+	} else {
+		s.log.WithFields(logrus.Fields{
+			"pipeline_name": pipelineName,
+			"application":   pipelineApp,
+		}).Info("Provided pipeline name is already a valid pipeline UUID")
 	}
+
 	return false, spinnakerObject
 }
 
@@ -522,11 +537,16 @@ func hasValidChildPipelineStages(stages []interface{}, parentPipelineApp []strin
 			errorsList = append(errorsList, "required stage key 'type' missing for stage")
 		} else {
 			if stageMap["type"].(string) != "pipeline" {
-				return hasPipelineStages, nil
+				continue
 			}
 		}
 		// Application value should match the one with the parent pipeline's one
-		if _, exists := stage.(map[string]interface{})["pipeline"]; exists {
+		if pipeline, exists := stage.(map[string]interface{})["pipeline"]; exists {
+
+			if reflect.TypeOf(pipeline).Kind() != reflect.Map {
+				continue
+			}
+
 			hasPipelineStages = true
 			stageApplication, applicationExists := stage.(map[string]interface{})["application"]
 			if !applicationExists {
@@ -592,7 +612,8 @@ func (s *SpinClient) pollSpinnakerGetPipelineConfigUsingGET(application string, 
 // Once all loops are closed the most top level pipeline has all all stage's pipelines replaced with UUIDs and it is saved
 func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]interface{}) error {
 	for _, stage := range stages.([]interface{}) {
-		stagePipelineField, exists := stage.(map[string]interface{})["pipeline"]
+		stage := stage.(map[string]interface{})
+		stagePipelineField, exists := stage["pipeline"]
 		if !exists {
 			continue
 		}
@@ -602,7 +623,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 			continue
 		}
 
-		childPipeline := stage.(map[string]interface{})["pipeline"].(map[string]interface{})
+		childPipeline := stage["pipeline"].(map[string]interface{})
 
 		if err := s.isValidPipeline(childPipeline); err != nil {
 			return err
@@ -626,6 +647,18 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 			if hasChildPipelines {
 				if err := s.saveNestedPipeline(childPipelineStages, childPipeline); err != nil {
 					return err
+				}
+			}
+
+			//  Replace upstream pipeline name string with real pipeline ID
+			s.log.Info("Searching for Stages with PipelineIDs needing replacement")
+			for _, stage := range childPipelineStages.([]interface{}) {
+				innerStage := stage.(map[string]interface{})
+
+				if !hasChildPipelines && mapContainsKey(innerStage, "application") && mapContainsKey(innerStage, "pipeline") && reflect.TypeOf(innerStage["pipeline"]).Kind() == reflect.String {
+					if response, result := s.findAndReplacePipelineNameWithFoundID(innerStage); response {
+						stage = result
+					}
 				}
 			}
 		}
@@ -656,7 +689,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 
 		// And override stage pipeline value with an the id (a UUID String) received from spinnaker pipeline.
 		// maps are updated by reference so the save of the parent pipeline will be updated as well
-		stage.(map[string]interface{})["pipeline"] = pipelineID
+		stage["pipeline"] = pipelineID
 	}
 
 	return nil
@@ -695,6 +728,21 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	// Check whether a pipeline has stages list
 	if stages, exists := pipeline["stages"]; exists {
 
+		//  Replace upstream pipeline name string with real pipeline ID
+		s.log.Info("Searching for Stages with PipelineIDs needing replacement")
+		for _, stage := range stages.([]interface{}) {
+			stage := stage.(map[string]interface{})
+
+			if mapContainsKey(stage, "application") && mapContainsKey(stage, "pipeline") {
+				pipelineDataType := reflect.TypeOf(stage["pipeline"])
+				if pipelineDataType.Kind() == reflect.String {
+					if response, result := s.findAndReplacePipelineNameWithFoundID(stage); response {
+						stage = result
+					}
+				}
+			}
+		}
+
 		hasChildPipelines, err := hasValidChildPipelineStages(stages.([]interface{}), []string{pipeline["application"].(string)})
 		if err != nil {
 			return &http.Response{}, err
@@ -706,17 +754,6 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 				return &http.Response{}, err
 			}
 		}
-
-		//  Replace upstream pipeline name string with real pipeline ID
-		s.log.Info("Searching for Stages with PipelineIDs needing replacement")
-		for _, stage := range stages.([]interface{}) {
-			if !(stage.(map[string]interface{})["type"] == "pipeline") {
-				if response, result := s.findAndReplacePipelineNameWithFoundID(stage.(map[string]interface{})); response {
-					stage = result
-				}
-			}
-		}
-
 	}
 
 	pipelineBytes, err := jsoniter.Marshal(pipeline)

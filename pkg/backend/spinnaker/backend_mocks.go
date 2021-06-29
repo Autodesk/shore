@@ -1,17 +1,23 @@
 package spinnaker
 
 import (
+	"bytes"
 	"context"
 	"io"
+	"io/ioutil"
 	"net/http"
 
+	jsoniter "github.com/json-iterator/go"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockCustomSpinCli struct {
 	CustomSpinCLI
 }
-type MockPipelineControllerAPI struct{}
+type MockPipelineControllerAPI struct {
+	mock.Mock
+}
 type MockApplicationControllerAPI struct{}
 type MockApplicationControllerAPIWithEmptyID struct{}
 
@@ -30,7 +36,15 @@ func (a *MockApplicationControllerAPI) GetPipelineConfigUsingGET(ctx context.Con
 }
 
 func (p *MockPipelineControllerAPI) SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error) {
-	return &http.Response{StatusCode: http.StatusOK}, nil
+	data, err := jsoniter.Marshal(pipeline)
+
+	if err != nil {
+		return &http.Response{}, err
+	}
+
+	body := ioutil.NopCloser(bytes.NewReader(data))
+
+	return &http.Response{StatusCode: http.StatusOK, Body: body}, nil
 }
 
 func (p *MockPipelineControllerAPI) InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrID string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error) {

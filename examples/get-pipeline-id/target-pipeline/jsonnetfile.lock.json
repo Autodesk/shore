@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "dependencies": [
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/Autodeskarmory-lib-jsonnet.git",
+          "subdir": ""
+        }
+      },
+      "version": "76379ac371d6e0cfa515bdff2e49b837d1169afd",
+      "sum": "/UsWnv1N1QoeeZ39an9dTlJ8SbVu5+dMlwhSDmRr9Pc="
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/Autodeskspin-lib-jsonnet.git",
+          "subdir": ""
+        }
+      },
+      "version": "690ee8affa854c6c4fbcbc3475b8ae3f7b8c72cd",
+      "sum": "TW/0WyWouFRFa+Uc1+0NMuLtQdVyzzTFSBhPl2N2qnY="
+    }
+  ],
+  "legacyImports": false
+}
