@@ -138,10 +138,5 @@ func getShoreInitValues() (project.ShoreProjectInit, error) {
 		}
 	}
 
-	return project.ShoreProjectInit{
-		ProjectName: projectName,
-		Renderer:    renderer,
-		Backend:     backend,
-		Libraries:   libs,
-	}, nil
+	return project.NewShoreProjectInit(projectName, renderer, backend, libs), nil
 }

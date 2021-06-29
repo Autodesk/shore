@@ -80,13 +80,9 @@ func TestIsValidGoVersionReallyBrokenVersion(t *testing.T) {
 func TestInitSuccess(t *testing.T) {
 	// Given
 	localFs := afero.NewMemMapFs()
+	libs := []string{"https://github.com/Autodeskspin-lib-jsonnet.git", "https://github.com/Autodeskadsk-lib-jsonnet.git"}
 
-	init := project.ShoreProjectInit{
-		ProjectName: "my-project",
-		Renderer:    "jsonnet",
-		Backend:     "spinnaker",
-		Libraries:   []string{"https://github.com/Autodeskspin-lib-jsonnet.git", "https://github.com/Autodeskadsk-lib-jsonnet.git"},
-	}
+	init := project.NewShoreProjectInit("my-project", "jsonnet", "spinnaker", libs)
 
 	pInit := project.ProjectInitialize{
 		Log: Logger,
@@ -121,16 +117,50 @@ func TestInitSuccess(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestShortName(t *testing.T) {
+func TestBasicProjectName(t *testing.T) {
 	// Given
-	init := project.ShoreProjectInit{
-		ProjectName: "my-project",
-		Renderer:    "jsonnet",
-		Backend:     "spinnaker",
-		Libraries:   []string{"https://github.com/Autodeskspin-lib-jsonnet.git", "https://github.com/Autodeskadsk-lib-jsonnet.git"},
-	}
+	initBasic := project.NewShoreProjectInit("My-Project", "jsonnet", "spinnaker", []string{})
+
 	// Tests
-	shortName := init.ShortName()
+	projectNameBasic := initBasic.ProjectName()
+
 	// Assert
-	assert.Equal(t, "myproject", shortName)
+	assert.Equal(t, "My-Project", projectNameBasic)
+
+}
+
+func TestMessyProjectName(t *testing.T) {
+	// Given
+	initMessy := project.NewShoreProjectInit("M%y-P_ro. j?e & c\\t", "jsonnet", "spinnaker", []string{})
+
+	// Tests
+	projectNameMessy := initMessy.ProjectName()
+
+	// Assert
+	assert.Equal(t, "My-P_ro. je & ct", projectNameMessy)
+
+}
+
+func TestBasicAppName(t *testing.T) {
+	// Given
+	initBasic := project.NewShoreProjectInit("My-Project", "jsonnet", "spinnaker", []string{})
+
+	// Tests
+	appNameBasic := initBasic.AppName()
+
+	// Assert
+	assert.Equal(t, "MyProject", appNameBasic)
+
+}
+
+func TestMessyAppName(t *testing.T) {
+	// Given
+	initMessy := project.NewShoreProjectInit("M%y-P_ro. j?e & c\\t", "jsonnet", "spinnaker", []string{})
+
+	// Tests
+	appNameMessy := initMessy.AppName()
+
+	// Assert
+	assert.Equal(t, "MyProject", appNameMessy)
+
 }
