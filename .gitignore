@@ -14,3 +14,4 @@ shore*
 !examples/**/shore*
 !cmd/shore
 dist/
+coverage_*.out

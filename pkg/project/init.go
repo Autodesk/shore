@@ -43,7 +43,7 @@ function(params={}) (
 )
 `
 
-var readMeTpl = `# {{ .ProjectName }}
+var readMeTpl = `# {{ .AppName }}
 A {{ .Renderer }} project for {{ .Backend }}, initialized by Shore.
 `
 
@@ -56,8 +56,8 @@ vendor/*
 .idea
 `
 
-var e2eTpl = `application: "{{ .ProjectName }}"
-pipeline: "{{ .ShortName }}-pipeline"
+var e2eTpl = `application: "{{ .AppName }}"
+pipeline: "{{ .ProjectName }}-pipeline"
 tests:
   "Test Success":
     execution_args:
@@ -66,30 +66,53 @@ tests:
     assertions: { }
 `
 
-var execTpl = `application: "{{ .ProjectName }}"
-pipeline: "{{ .ShortName }}-pipeline"
+var execTpl = `application: "{{ .AppName }}"
+pipeline: "{{ .ProjectName }}-pipeline"
 parameters:
   my_pipeline_param: "Example Value"
 `
 
-var renderTpl = `application: "{{ .ProjectName }}"
-pipeline: "{{ .ShortName }}-pipeline"
+var renderTpl = `application: "{{ .AppName }}"
+pipeline: "{{ .ProjectName }}-pipeline"
 example_value: "World"
 `
 
 // ShoreProjectInit - Common data structure to initialize a shore project.
 type ShoreProjectInit struct {
-	ProjectName string
+	projectName string
 	Renderer    string
 	Backend     string
 	Libraries   []string
 }
 
-// ShortName Creates a golang matching package name.
-// github.com/Autodesk/test-init becomes testinit
-func (s ShoreProjectInit) ShortName() string {
-	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
-	split := strings.Split(s.ProjectName, "/")
+// NewShoreProjectInit - Creates a ShoreProjectInit
+func NewShoreProjectInit(projectName, render, backend string, libs []string) ShoreProjectInit {
+	return ShoreProjectInit{
+		projectName: projectName,
+		Renderer:    render,
+		Backend:     backend,
+		Libraries:   libs,
+	}
+}
+
+// ProjectName Creates a golang matching package name. It is santized.
+// Aligning with what Spinnaker expects:
+// https://github.com/spinnaker/deck/blob/5a9768bc6db2f527a73d6b1f5fb3120c101e094b/app/scripts/modules/core/src/pipeline/create/CreatePipelineModal.tsx#L290
+// Example - github.com/Autodesk/test-init becomes test-init
+func (s ShoreProjectInit) ProjectName() string {
+	reg, _ := regexp.Compile(`[\^/\\?%#]*`)
+	split := strings.Split(s.projectName, "/")
+	projectName := reg.ReplaceAllString(split[len(split)-1], "")
+
+	return projectName
+}
+
+// AppName - Creates an Application name that is santized.
+// Aligning with what Spinnaker expects, see comment here:
+// https://github.com/Autodeskshore/issues/108#issuecomment-1607689
+func (s ShoreProjectInit) AppName() string {
+	reg, _ := regexp.Compile(`[\W_]*`)
+	split := strings.Split(s.projectName, "/")
 	projectName := reg.ReplaceAllString(split[len(split)-1], "")
 
 	return projectName
