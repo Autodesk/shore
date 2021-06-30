@@ -83,7 +83,7 @@ func NewProjectInitCommand(d *Dependencies) *cobra.Command {
 
 			s.Stop()
 
-			color.Green("Project %s has been created successfully!", shoreProjectInit.ProjectName)
+			color.Green("Project %s has been created successfully!", shoreProjectInit.ProjectName())
 			color.Cyan("Try running `shore render`")
 
 			return nil
