@@ -1,7 +1,7 @@
-FROM ***REMOVED***.dev.adskengineer.net/container-hardening/alpine-hardened-min as BASE
+FROM autodesk-docker-build-images.***REMOVED***/hardened-build/golang-1.16:latest as BASE
 LABEL maintainer="shore@autodesk.com"
 
-ARG SHORE_VERSION="0.0.4"
+ARG SHORE_VERSION="0.0.5"
 ARG SHORE_FILE_NAME="shore_${SHORE_VERSION}_Linux_x86_64.tar.gz"
 
 ARG JT_VERSION="0.0.6"
@@ -43,7 +43,7 @@ RUN echo "Installing Jsonnet Bundler (${JB_VERSION}), shore (v${SHORE_VERSION}),
 
 
 # Final Container
-FROM ***REMOVED***.dev.adskengineer.net/container-hardening/alpine-hardened-min
+FROM autodesk-docker-build-images.***REMOVED***/hardened-build/golang-1.16:latest
 
 RUN apk add git --no-cache
 

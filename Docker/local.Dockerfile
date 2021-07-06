@@ -1,4 +1,4 @@
-FROM ***REMOVED***.dev.adskengineer.net/container-hardening/alpine-hardened-min as BASE
+FROM autodesk-docker-build-images.***REMOVED***/hardened-build/golang-1.16:latest as BASE
 LABEL maintainer="shore@autodesk.com"
 
 ARG JT_VERSION="0.0.6"
@@ -13,7 +13,6 @@ ARG JSONNET_FILE_NAME="go-jsonnet_${JSONNET_VERSION}_Linux_x86_64.tar.gz"
 ARG SPIN_CLI_VERSION="1.22.0"
 ARG SPIN_CLI_FILE_NAME="spin"
 
-ARG GO_LANG_VERSION="1.15.10-r0"
 
 WORKDIR /tmp/build
 
@@ -38,12 +37,11 @@ RUN echo "Installing Jsonnet Bundler (${JB_VERSION}), jsonnet-test (v${JT_VERSIO
 
 
 # Final Container
-# TODO: Move to a golang base image.
-FROM ***REMOVED***.dev.adskengineer.net/container-hardening/alpine-hardened-min
+FROM autodesk-docker-build-images.***REMOVED***/hardened-build/golang-1.16:latest
 
 WORKDIR /shore
 
-RUN apk add git go=1.15.10-r0 --no-cache
+RUN apk add git make --no-cache
 
 COPY --from=BASE /tmp/build/jb /usr/local/bin/jb
 COPY --from=BASE /tmp/build/jt /usr/local/bin/jt
@@ -53,8 +51,5 @@ COPY --from=BASE /tmp/build/spin /usr/local/bin/spin
 
 # Copy over the source, and install from it.
 COPY / .
-RUN ls -lah && \
-    pwd && \
-    go mod download && \
-    go mod vendor && \
+RUN make setup && \
     go build -o shore cmd/shore/shore.go
