@@ -1,0 +1,8 @@
+application: "{{ .ProjectName }}"
+pipeline: "{{ .AppName }}-pipeline"
+tests:
+  "Test Success":
+    execution_args:
+      parameters:
+        my_pipeline_param: "Test Parameter"
+    assertions: { }

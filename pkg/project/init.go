@@ -2,80 +2,22 @@ package project
 
 import (
 	"bytes"
+	"embed"
 	"errors"
-	"html/template"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 
 	v1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"
 	v1Dependencies "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1/deps"
 	"github.com/sirupsen/logrus"
 )
 
-var testTpl = `local deployment = import '../main.pipeline.jsonnet';
-
-local tests = [
-  deployment({application: 'application', pipeline: 'pipeline', example_value: 'example_value'}),
-];
-
-local assertions = [
-  {application: 'application', pipeline: 'pipeline', message: "Hello example_value!"}
-];
-
-{
-  pass: tests == assertions,
-  tests: tests,
-  assertions: assertions,
-}
-`
-
-var jsonnetTpl = `/**
-    Creates a pipeline.
-**/
-
-function(params={}) (
-	{
-		"application": params["application"],
-		"pipeline": params["pipeline"],
-		"message": "Hello %s!" % [params["example_value"]],
-	}
-)
-`
-
-var readMeTpl = `# {{ .AppName }}
-A {{ .Renderer }} project for {{ .Backend }}, initialized by Shore.
-`
-
-var gitIgnoreTpl = `# Go specific
-vendor/*
-!vendor/modules.txt
-
-# IDE Specific
-.vscode/
-.idea
-`
-
-var e2eTpl = `application: "{{ .AppName }}"
-pipeline: "{{ .ProjectName }}-pipeline"
-tests:
-  "Test Success":
-    execution_args:
-      parameters:
-        my_pipeline_param: "Test Parameter"
-    assertions: { }
-`
-
-var execTpl = `application: "{{ .AppName }}"
-pipeline: "{{ .ProjectName }}-pipeline"
-parameters:
-  my_pipeline_param: "Example Value"
-`
-
-var renderTpl = `application: "{{ .AppName }}"
-pipeline: "{{ .ProjectName }}-pipeline"
-example_value: "World"
-`
+// Holds the content of the whole `templates` directory
+//go:embed templates/*
+var templates embed.FS
 
 // ShoreProjectInit - Common data structure to initialize a shore project.
 type ShoreProjectInit struct {
@@ -140,16 +82,25 @@ Init - Initializes a shore project
 	Does not run jsonnent-bundler install (`jb install`).
 */
 func (pInit *ProjectInitialize) Init(shoreInit ShoreProjectInit) error {
-	if err := pInit.createFileFromTemplate("README.md", readMeTpl, shoreInit); err != nil {
+	if err := pInit.createFileFromTemplate("README.md", shoreInit); err != nil {
 		return err
 	}
-	if err := pInit.createFileFromTemplate("E2E.yml", e2eTpl, shoreInit); err != nil {
+	if err := pInit.createFileFromTemplate("E2E.yml", shoreInit); err != nil {
 		return err
 	}
-	if err := pInit.createFileFromTemplate("render.yml", renderTpl, shoreInit); err != nil {
+	if err := pInit.createFileFromTemplate("render.yml", shoreInit); err != nil {
 		return err
 	}
-	if err := pInit.createFileFromTemplate("exec.yml", execTpl, shoreInit); err != nil {
+	if err := pInit.createFileFromTemplate("exec.yml", shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("main.pipeline.jsonnet", shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate(".gitignore", shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("tests/example_test.libsonnet", shoreInit); err != nil {
 		return err
 	}
 
@@ -171,15 +122,17 @@ func (pInit *ProjectInitialize) Init(shoreInit ShoreProjectInit) error {
 	}
 
 	pInit.Project.WriteFile("jsonnetfile.json", string(jsonnetFileBytes))
-	pInit.Project.WriteFile("main.pipeline.jsonnet", jsonnetTpl)
-	pInit.Project.WriteFile(".gitignore", gitIgnoreTpl)
-	pInit.Project.WriteFile("tests/example_test.libsonnet", testTpl)
 
 	return nil
 }
 
-func (pInit *ProjectInitialize) createFileFromTemplate(fileName string, fileTpl string, shoreInit ShoreProjectInit) error {
-	t, err := template.New(fileName).Parse(fileTpl)
+func (pInit *ProjectInitialize) createFileFromTemplate(fileName string, shoreInit ShoreProjectInit) error {
+	templateContent, err := templates.ReadFile(fmt.Sprintf("templates/%s", fileName))
+	if err != nil {
+		return err
+	}
+
+	t, err := template.New(fileName).Parse(string(templateContent))
 
 	if err != nil {
 		return err
