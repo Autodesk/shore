@@ -104,7 +104,12 @@ func TestInitSuccess(t *testing.T) {
 	renderExists, _ := afero.Exists(localFs, "/tmp/test/render.yml")
 	execExists, _ := afero.Exists(localFs, "/tmp/test/exec.yml")
 	e2eExists, _ := afero.Exists(localFs, "/tmp/test/E2E.yml")
+
 	testExampleExists, _ := afero.Exists(localFs, "/tmp/test/tests/example_test.libsonnet")
+
+	cleanupPipelineExists, _ := afero.Exists(localFs, "/tmp/test/cleanup/cleanup.pipeline.jsonnet")
+	cleanupRenderExists, _ := afero.Exists(localFs, "/tmp/test/cleanup/render.yml")
+	cleanupExecExists, _ := afero.Exists(localFs, "/tmp/test/cleanup/exec.yml")
 
 	assert.True(t, mainExists)
 	assert.True(t, jsonnetfileExists)
@@ -113,7 +118,13 @@ func TestInitSuccess(t *testing.T) {
 	assert.True(t, renderExists)
 	assert.True(t, execExists)
 	assert.True(t, e2eExists)
+
 	assert.True(t, testExampleExists)
+
+	assert.True(t, cleanupPipelineExists)
+	assert.True(t, cleanupRenderExists)
+	assert.True(t, cleanupExecExists)
+
 	assert.Nil(t, err)
 }
 

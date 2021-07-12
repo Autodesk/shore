@@ -100,7 +100,18 @@ func (pInit *ProjectInitialize) Init(shoreInit ShoreProjectInit) error {
 	if err := pInit.createFileFromTemplate(".gitignore", shoreInit); err != nil {
 		return err
 	}
+
 	if err := pInit.createFileFromTemplate("tests/example_test.libsonnet", shoreInit); err != nil {
+		return err
+	}
+
+	if err := pInit.createFileFromTemplate("cleanup/render.yml", shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("cleanup/exec.yml", shoreInit); err != nil {
+		return err
+	}
+	if err := pInit.createFileFromTemplate("cleanup/cleanup.pipeline.jsonnet", shoreInit); err != nil {
 		return err
 	}
 
