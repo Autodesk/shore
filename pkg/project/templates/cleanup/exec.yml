@@ -1,0 +1,4 @@
+application: "{{ .ProjectName }}"
+pipeline: "{{ .AppName }}-pipeline-cleanup"
+parameters:
+  my_pipeline_param: "Example Value"

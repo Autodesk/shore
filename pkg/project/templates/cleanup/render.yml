@@ -1,0 +1,3 @@
+application: "{{ .ProjectName }}"
+pipeline: "{{ .AppName }}-pipeline-cleanup"
+example_value: "World"
