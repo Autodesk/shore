@@ -30,6 +30,8 @@ import (
 	spinGateApi "github.com/spinnaker/spin/gateapi"
 )
 
+const defaultTestTimeout = 1200 // 20 minutes in seconds
+
 // ApplicationControllerAPI - Interface wrapper for the Application Controller API
 type ApplicationControllerAPI interface {
 	GetPipelineConfigUsingGET(ctx context.Context, application string, pipelineName string) (map[string]interface{}, *http.Response, error)
@@ -332,6 +334,13 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 		return fmt.Errorf("test config missing required property `pipeline`")
 	}
 
+	if testConfig.Timeout == 0 {
+		s.log.Info("Detected a timeout of 0 sec for testing, defaulting to %d seconds.", defaultTestTimeout)
+		testConfig.Timeout = defaultTestTimeout
+	} else if testConfig.Timeout < 0 {
+		return fmt.Errorf("test config specifies the property `timeout` as %d seconds, but it must be greater than 0", testConfig.Timeout)
+	}
+
 	testErrors := make(map[string][]string)
 
 	for testName, test := range testConfig.Tests {
@@ -366,11 +375,11 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 		s.log.Info("Retrieving pipeline details for test: ", testName)
 		execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
 
-		if execDetails.Status == PipelineRunning {
+		// Other statuses to consider - PipelinePaused / PipelineSuspended
+		if execDetails.Status == PipelineRunning || execDetails.Status == PipelineNotStarted {
 			s.log.Info("Waiting for pipeline to finish for test: ", testName)
 
-			// Hardcoded 50 timeout.
-			execDetails, _, err = s.waitForPipelineToFinish(refID, 50)
+			execDetails, _, err = s.waitForPipelineToFinish(refID, testConfig.Timeout)
 			if err != nil {
 
 				testErrors[testName] = append(testErrors[testName], fmt.Errorf("max timed out reached for test: '%s' with errors: %w", testName, err).Error())
@@ -460,7 +469,8 @@ func (s *SpinClient) waitForPipelineToFinish(refID string, timeout int) (*Pipeli
 	retryFunc := func() error {
 		execDetails, res, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
 
-		if execDetails.Status == PipelineRunning {
+		// Other statuses to consider - PipelinePaused / PipelineSuspended
+		if execDetails.Status == PipelineRunning || execDetails.Status == PipelineNotStarted {
 			return retry.ErrRetry
 		}
 

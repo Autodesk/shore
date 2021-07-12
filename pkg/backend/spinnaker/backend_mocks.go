@@ -3,6 +3,7 @@ package spinnaker
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -53,21 +54,35 @@ func (p *MockPipelineControllerAPI) InvokePipelineConfigUsingPOST1(ctx context.C
 
 func (s *MockCustomSpinCli) ExecutePipeline(application, pipelineName string, args io.Reader) (*ExecutePipelineResponse, *http.Response, error) {
 	req, _ := http.NewRequest("POST", "url", args)
-	return &ExecutePipelineResponse{Ref: "/pipeline/1234"}, &http.Response{StatusCode: http.StatusOK, Request: req}, nil
+	refID := -1
+
+	switch application {
+	case "timeout-app":
+		refID = 9999
+	default:
+		refID = 1234
+	}
+
+	return &ExecutePipelineResponse{Ref: fmt.Sprintf("/pipeline/%d", refID)}, &http.Response{StatusCode: http.StatusOK, Request: req}, nil
 }
 
 func (s *MockCustomSpinCli) PipelineExecutionDetails(refID string, args io.Reader) (*PipelineExecutionDetailsResponse, *http.Response, error) {
+	status := "SUCCEEDED"
+	if refID == "9999" { // timeout-app
+		status = "NOT_STARTED"
+	}
 	return &PipelineExecutionDetailsResponse{
 		Application: "application",
 		Stages: []map[string]interface{}{
 			{
 				"name":   "testedname",
-				"status": "SUCCEEDED",
+				"status": status,
 				"outputs": map[string]interface{}{
 					"test": "123",
 				},
 			},
 		},
+		Status:       status,
 		PipelineName: "pipeline",
 	}, &http.Response{StatusCode: http.StatusOK}, nil
 }
