@@ -978,3 +978,63 @@ func TestTestingNoPipelineFailed(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func TestTestingBadTimeout(t *testing.T) {
+	config := `{
+		"application": "test1test2test3",
+		"pipeline": "abc",
+		"timeout": -1,
+		"tests": {
+			"Test Success": {
+				"execution_args": {
+					"parameters": {
+					"a": "a"
+					}
+				},
+				"assertions": {
+					"testedname": {
+						"expected_status": "succeeded",
+						"expected_output": {
+							"test": "123"
+						}
+					}
+				}
+			}
+		}
+	}
+	`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Error(t, err)
+}
+
+func TestTestingTimeout(t *testing.T) {
+	config := `{
+		"application": "timeout-app",
+		"pipeline": "abc",
+		"timeout": 1,
+		"tests": {
+			"Test Success": {
+				"execution_args": {
+					"parameters": {
+					"a": "a"
+					}
+				},
+				"assertions": {
+					"testedname": {
+						"expected_status": "succeeded",
+						"expected_output": {
+							"test": "123"
+						}
+					}
+				}
+			}
+		}
+	}
+	`
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.Error(t, err)
+}

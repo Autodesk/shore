@@ -49,6 +49,7 @@ type TestsConfig struct {
 	// RenderArgs
 	Application string                `json:"application"`
 	Pipeline    string                `json:"pipeline"`
+	Timeout     int                   `json:"timeout"`
 	Tests       map[string]TestConfig `json:"tests"`
 }
 
