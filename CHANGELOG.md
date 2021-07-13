@@ -1,5 +1,23 @@
 # Changelog
 
+## [v0.0.6](https://github.com/Autodeskshore/releases/tag/v0.0.6) (2021-07-12)
+
+[Full Changelog](https://github.com/Autodeskshore/compare/v0.0.5...v0.0.6)
+
+**Fixed bugs:**
+
+- exec command Regression in v0.0.5: -p flag is not working and missing exec.yml throws an error [\#137](https://github.com/Autodeskshore/issues/137)
+- error in  project init's pipeline generation in all yamls [\#108](https://github.com/Autodeskshore/issues/108)
+
+**Documentation updates:**
+
+- code-coverage badge for shore/golang [\#115](https://github.com/Autodeskshore/issues/115)
+
+**Closed issues:**
+
+- Refactor Init to make use of Go's embedded FS [\#135](https://github.com/Autodeskshore/issues/135)
+- Update `shore project init` with `shore cleanup` files. [\#126](https://github.com/Autodeskshore/issues/126)
+
 ## [v0.0.5](https://github.com/Autodeskshore/releases/tag/v0.0.5) (2021-06-20)
 
 [Full Changelog](https://github.com/Autodeskshore/compare/v0.0.4...v0.0.5)
