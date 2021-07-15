@@ -15,6 +15,28 @@ The example is complex by testing multiple scenarios:
   * Trigger Pipeline on success of `main-pipeline`.
   * Resolve Artifact From Pipeline
 
+## Initializing And Running The Example
+
+```bash
+cd examples/get-pipeline-id/main-pipeline
+jb install
+cd -
+
+cd examples/get-pipeline-id/target-pipeline
+jb install
+cd -
+
+cd examples/get-pipeline-id/remote-pipeline
+jb install
+cd -
+
+
+env LOCAL=true SHORE_PROJECT_PATH="$(pwd)/examples/get-pipeline-id/main-pipeline" go run cmd/shore/shore.go save
+env LOCAL=true SHORE_PROJECT_PATH="$(pwd)/examples/get-pipeline-id/target-pipeline" go run cmd/shore/shore.go save
+env LOCAL=true SHORE_PROJECT_PATH="$(pwd)/examples/get-pipeline-id/remote-pipeline" go run cmd/shore/shore.go save
+env LOCAL=true SHORE_PROJECT_PATH="$(pwd)/examples/get-pipeline-id/main-pipeline" go run cmd/shore/shore.go exec
+```
+
 ## Explaining The Example
 
 ### Main Invokes The Nested Pipeline
