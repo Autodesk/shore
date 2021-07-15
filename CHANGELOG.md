@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.0.7](https://github.com/Autodeskshore/releases/tag/v0.0.7) (2021-07-15)
+
+[Full Changelog](https://github.com/Autodeskshore/compare/v0.0.6...v0.0.7)
+
+**Fixed bugs:**
+
+- shore test-remote fails [\#123](https://github.com/Autodeskshore/issues/123)
+
 ## [v0.0.6](https://github.com/Autodeskshore/releases/tag/v0.0.6) (2021-07-12)
 
 [Full Changelog](https://github.com/Autodeskshore/compare/v0.0.5...v0.0.6)
