@@ -729,8 +729,11 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	if triggers, exists := pipeline["triggers"]; exists {
 		//  Replace upstream pipeline name string with real pipeline ID
 		for _, trigger := range triggers.([]interface{}) {
-			if response, result := s.findAndReplacePipelineNameWithFoundID(trigger.(map[string]interface{})); response {
-				trigger = result
+			triggerObj := trigger.(map[string]interface{})
+			if mapContainsKey(triggerObj, "application") && mapContainsKey(triggerObj, "pipeline") {
+				if response, result := s.findAndReplacePipelineNameWithFoundID(triggerObj); response {
+					trigger = result
+				}
 			}
 		}
 	}

@@ -28,6 +28,9 @@ function(params) (
         application: 'test1test2test3',
         pipeline: 'get-pipeline-id-target-pipeline',
       },
+      trigger.WebhookTrigger {
+        source: 'abc123',
+      },
     ],
   }
 )
