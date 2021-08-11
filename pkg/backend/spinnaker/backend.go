@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/Autodeskshore/internal/retry"
+	"github.com/Autodeskshore/pkg/shore_testing"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
@@ -314,13 +315,8 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (string, *http.Response, e
 // Currently returns a not-so-well formatted error.
 // The indended solution is to create a shared API between `shore-cli` & the `backend` to expect well formatted struct for the CLI to render correctly.
 // TODO: Design a struct to pass data back to `shore-cli` so the UI layer could render the test-results correctly.
-func (s *SpinClient) TestPipeline(config string, onChange func()) error {
-	var testConfig TestsConfig
+func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange func()) error {
 	s.log.Info("Starting test suite")
-
-	if err := jsoniter.Unmarshal([]byte(config), &testConfig); err != nil {
-		return err
-	}
 
 	if err := s.initializeAPI(); err != nil {
 		return err
@@ -335,16 +331,29 @@ func (s *SpinClient) TestPipeline(config string, onChange func()) error {
 	}
 
 	if testConfig.Timeout == 0 {
-		s.log.Info("Detected a timeout of 0 sec for testing, defaulting to %d seconds.", defaultTestTimeout)
+		s.log.Info(fmt.Sprintf("Detected a timeout of 0 sec for testing, defaulting to %d seconds.", defaultTestTimeout))
 		testConfig.Timeout = defaultTestTimeout
 	} else if testConfig.Timeout < 0 {
 		return fmt.Errorf("test config specifies the property `timeout` as %d seconds, but it must be greater than 0", testConfig.Timeout)
 	}
 
+	configuredTestNames := make([]string, 0)
+	for testName := range testConfig.Tests {
+		configuredTestNames = append(configuredTestNames, testName)
+	}
+
+	var testsToRun []string
+	if testConfig.Ordering != nil && len(testConfig.Ordering) > 0 {
+		testsToRun = testConfig.Ordering
+	} else {
+		testsToRun = configuredTestNames
+	}
+
 	testErrors := make(map[string][]string)
 
-	for testName, test := range testConfig.Tests {
-		s.log.Info("Running test %s", testName)
+	for _, testName := range testsToRun {
+		test := testConfig.Tests[testName]
+		s.log.Info(fmt.Sprintf("Running test %s", testName))
 
 		if test.ExecArgs == nil {
 			test.ExecArgs = make(map[string]interface{})

@@ -3,6 +3,11 @@ package command
 import (
 	"fmt"
 
+	// Feels a bit weird, maybe move the TestsConfig object out?
+
+	"github.com/Autodeskshore/pkg/shore_testing"
+
+	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +19,9 @@ Testing implementation should be defined on the `backend` level.
 // NewTestRemoteCommand - Using a Project, Renderer & Backend runs a test suite defined in a config file and outputs the results to the customer.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang/etc...) and backends (Spinnaker/Tekton/ArgoCD/JenkinsX/etc...)
 func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
-	return &cobra.Command{
+	var testNames []string
+
+	cmd := &cobra.Command{
 		Use:   "test-remote",
 		Short: "Run the test suite on a remotely saved pipeline",
 		Long:  "Using the E2E.yaml file run a full test-suite on the pipeline stored in a specific backend",
@@ -25,8 +32,21 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			// A bit of a hack, rather change this to an object later on.
-			testConfig := string(testSettingsBytes)
+			var testConfig shore_testing.TestsConfig
+			if err := jsoniter.Unmarshal(testSettingsBytes, &testConfig); err != nil {
+				return err
+			}
+
+			if len(testNames) > 0 {
+				if err := verifyTestExist(testNames, testConfig); err != nil {
+					return err
+				}
+				testConfig.Ordering = testNames
+			} else if testConfig.Ordering != nil && len(testConfig.Ordering) > 0 {
+				if err := verifyTestExist(testConfig.Ordering, testConfig); err != nil {
+					return err
+				}
+			}
 
 			err = d.Backend.TestPipeline(testConfig, func() {})
 
@@ -39,4 +59,17 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringSliceVarP(&testNames, "test-names", "t", []string{}, "An array of tests that will be ran. Preserves order.")
+
+	return cmd
+}
+
+func verifyTestExist(testNames []string, testConfig shore_testing.TestsConfig) error {
+	for _, testName := range testNames {
+		if _, ok := testConfig.Tests[testName]; !ok {
+			return fmt.Errorf("the provided E2E configuration does not contain [%s] as a test", testName)
+		}
+	}
+	return nil
 }

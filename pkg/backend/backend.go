@@ -1,6 +1,10 @@
 package backend
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/Autodeskshore/pkg/shore_testing"
+)
 
 // Backend - an interface that describes a generic backend pipeline
 type Backend interface {
@@ -10,5 +14,5 @@ type Backend interface {
 	ExecutePipeline(parameters string) (string, *http.Response, error)
 	WaitForPipelineToFinish(id string, timeout int) (string, *http.Response, error)
 	// TODO: Reconsider `onChange`, it may be a channel to communicate data between `shore-cli` & the Testing process in an async fashion.
-	TestPipeline(testConfig string, onChange func()) error
+	TestPipeline(testConfig shore_testing.TestsConfig, onChange func()) error
 }
