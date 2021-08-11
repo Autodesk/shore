@@ -14,7 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.4.1
 	github.com/spf13/cobra v1.1.1
-	github.com/spf13/viper v1.7.1
 	github.com/spinnaker/spin v0.4.1-0.20200908154654-3fb77f4ae948
 	github.com/stretchr/testify v1.6.1
+	gopkg.in/yaml.v2 v2.4.0
 )

@@ -8,7 +8,6 @@ import (
 
 	"github.com/Autodeskshore/pkg/command"
 	"github.com/spf13/afero"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,6 +31,8 @@ func TestSuccessfulRenderWithConfigFile(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
 		err := renderCmd.Execute()
 
 		// Assert
@@ -54,6 +55,8 @@ func TestSuccessfulRenderWithoutParams(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
 		err := renderCmd.Execute()
 
 		// Assert
@@ -65,7 +68,6 @@ func TestSuccessRenderCommandLineRenderParams(t *testing.T) {
 	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
 		renderConfig := `{"a": "c"}`
-		viper.Set("values", renderConfig)
 		pipeline := `
 		function(params={})(
 			{
@@ -79,6 +81,9 @@ func TestSuccessRenderCommandLineRenderParams(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
+		renderCmd.Flags().Set("values", renderConfig)
 		err := renderCmd.Execute()
 
 		// Assert
@@ -106,6 +111,8 @@ func TestFailedRenderMissingParam(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
 		err := renderCmd.Execute()
 
 		// Assert
@@ -131,6 +138,8 @@ func TestFailedRenderMissingAllRenderFileWithRequiredParams(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
 		err := renderCmd.Execute()
 
 		// Assert
@@ -156,6 +165,8 @@ func TestFailedMalformedPipeline(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
 		err := renderCmd.Execute()
 
 		// Assert
@@ -168,8 +179,6 @@ func TestFailedMalformedPipeline(t *testing.T) {
 func TestFailedMalformedRenderFile(t *testing.T) {
 	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
-		expectedErrorMessage := "While parsing config: unexpected end of JSON input"
-
 		renderConfig := `{"a":`
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "render.json"), []byte(renderConfig), os.ModePerm)
 
@@ -185,11 +194,11 @@ func TestFailedMalformedRenderFile(t *testing.T) {
 
 		// Test
 		renderCmd := command.NewRenderCommand(deps)
+		renderCmd.SilenceErrors = true
+		renderCmd.SilenceUsage = true
 		err := renderCmd.Execute()
 
 		// Assert
-		assert.NotNil(t, err)
-		assert.Equal(t, expectedErrorMessage, err.Error())
-
+		assert.Error(t, err)
 	})
 }

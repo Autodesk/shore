@@ -1,13 +1,14 @@
 package command
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewExecCommand - Using a Project, Renderer & Backend, executes a pipeline pipeline.
@@ -22,11 +23,11 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 		Short: "Executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if withPayload != "" {
-				viper.Set("payload", withPayload)
-			}
+			settingsBytes, err := GetConfigFileOrFlag(d, configPath, withPayload)
 
-			settingsBytes, err := GetConfigFileOrFlag(d, configPath, "payload")
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
 
 			// A bit of a hack, rather change this to an object later on.
 			execArgs := string(settingsBytes)
@@ -51,7 +52,7 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 			s.Writer = color.Error
 			s.Suffix = fmt.Sprintf(" Waiting for pipeline to finish executing (%d Seconds)", waitTimeout)
 			s.Start() // Start the spinner
-			execDetails, res, err := d.Backend.WaitForPipelineToFinish(refID, waitTimeout)
+			execDetails, _, err := d.Backend.WaitForPipelineToFinish(refID, waitTimeout)
 			s.Stop() // Stop the spinner
 
 			if err != nil {

@@ -12,7 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // Version - Shore CLI version
@@ -40,14 +39,8 @@ var rootCmd = &cobra.Command{
 func init() {
 	// TODO: Add global validations to init.
 	// cobra.OnInitialize()
-	viper.AutomaticEnv()
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("$SHORE_PROJECT_PATH")
-
 	fs := afero.NewOsFs()
 	logger = logrus.New()
-
-	viper.SetFs(fs)
 
 	commonDependencies := &command.Dependencies{
 		Project:  project.NewShoreProject(fs, logger),

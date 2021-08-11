@@ -1,16 +1,43 @@
 package command
 
 import (
-	"path"
+	"fmt"
+	"io/fs"
 	"path/filepath"
-	"strings"
 
+	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/afero"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
-func GetConfigFileOrFlag(d *Dependencies, fileName string, flagName string) ([]byte, error) {
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+type DefaultConfErr struct {
+	Err error
+}
+
+func (c *DefaultConfErr) Error() string {
+	return c.Err.Error()
+}
+
+type FlagErr struct {
+	Err error
+}
+
+func (c *FlagErr) Error() string {
+	return c.Err.Error()
+}
+
+// Returns the list of possible yaml extensions.
+// Example taken from - https://qvault.io/golang/golang-constant-maps-slices/
+func getExtensions() []string {
+	return []string{"json", "yaml", "yml"}
+}
+
+func GetConfigFileOrFlag(d *Dependencies, fileName string, flag string) ([]byte, error) {
+	var errors FlagErr
+
 	dir, err := d.Project.GetProjectPath()
 
 	if err != nil {
@@ -18,72 +45,86 @@ func GetConfigFileOrFlag(d *Dependencies, fileName string, flagName string) ([]b
 	}
 	// If a flag is set, no need to read the config.
 	// The config will be provided by the flag.
-	if viper.IsSet(flagName) {
-		var manualConfigFile string
-
-		// Check if the flag is pointing to a file.
-		possiblePath := viper.GetString(flagName)
-		// Don't merge paths if the file is pointing to an absolute path.
-		if path.IsAbs(possiblePath) {
-			manualConfigFile = possiblePath
+	if flag != "" {
+		// first test if this a JSON string.
+		// This is a quick check, without touching the FS.
+		if data, err := decodeJson(flag); err != nil {
+			errors.Err = multierror.Append(errors.Err, err)
 		} else {
-			manualConfigFile = path.Join(dir, possiblePath)
+			return data, nil
 		}
 
-		exists, err := afero.Exists(d.Project.FS, manualConfigFile)
+		var manualConfigFile string
 
-		viper.SetConfigType("yaml")
+		// Don't search the shore project directory path if the file is pointing to an absolute path.
+		if filepath.IsAbs(flag) {
+			manualConfigFile = flag
+		} else {
+			manualConfigFile = filepath.Join(dir, flag)
+		}
+
+		if data, err := readConfigFile(d, manualConfigFile); err != nil {
+			errors.Err = multierror.Append(errors.Err, fmt.Errorf("could not find file - '%v'", flag))
+		} else {
+			return data, nil
+		}
+
+		return nil, fmt.Errorf("failed to decode flag as either JSON or filepath with errors:\n%v", errors)
+	}
+
+	// If the flag isn't set we want to read the config file.
+	var pathErrors DefaultConfErr
+	for _, ext := range getExtensions() {
+		data, err := readConfigFile(d, filepath.Join(dir, fmt.Sprintf("%s.%s", fileName, ext)))
+
+		if err, ok := err.(*fs.PathError); err != nil && ok {
+			pathErrors.Err = multierror.Append(pathErrors.Err, err.Unwrap())
+			continue
+		}
 
 		if err != nil {
 			return nil, err
 		}
 
-		// If the string represents a file and it exists in the project path,
-		// we want to read the config file as is.
-		if exists {
-			dir, manualConfigFileName := filepath.Split(manualConfigFile)
-			fileName := strings.TrimSuffix(manualConfigFileName, filepath.Ext(manualConfigFileName))
-			d.Logger.Debug("Looking for file: ", fileName)
-			return readConfigFile(d, fileName, dir)
-		}
-
-		// If the string wasn't a file path, go
-		values := viper.GetStringMap(flagName)
-		return jsoniter.Marshal(values)
+		return data, err
 	}
 
-	// If the flag isn't set we want to read the config file.
-	return readConfigFile(d, fileName)
+	return nil, fmt.Errorf("%w", &pathErrors)
 }
 
-func readConfigFile(d *Dependencies, fileName string, searchPaths ...string) ([]byte, error) {
-	// To allow for a clean config setup, we will create a new `Viper` instance.
-	// This allows us to retrieve a clean `map[string]interface{}` without the accompanying flag configurations.
-	v := viper.New()
-	path, err := d.Project.GetProjectPath()
+func readConfigFile(d *Dependencies, filePath string) ([]byte, error) {
+	data, err := afero.ReadFile(d.Project.FS, filePath)
+	extension := filepath.Ext(filePath)
 
 	if err != nil {
 		return nil, err
 	}
-	// Reset the lookup path.
-	v.SetFs(d.Project.FS)
-	v.AddConfigPath(path)
 
-	// Add additional paths if necessary.
-	for _, s := range searchPaths {
-		v.AddConfigPath(s)
+	var config interface{}
+
+	switch extension {
+	// Test the JSON case separately because this `{"a": "a",}` is valid YAML-v1.2 but not valid JSON
+	case ".json":
+		if err := json.Unmarshal(data, &config); err != nil {
+			return nil, err
+		}
+	case ".yaml", ".yml":
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return nil, err
+		}
 	}
 
-	v.SetConfigName(fileName)
+	data, err = json.Marshal(config)
+	return data, err
+}
 
-	valuesErr := v.ReadInConfig()
+func decodeJson(flag string) ([]byte, error) {
+	data := []byte(flag)
 
-	if valuesErr != nil {
-		d.Logger.Error("Failed to load values")
-		return nil, valuesErr
+	var values interface{}
+	if err := json.Unmarshal(data, &values); err != nil {
+		return nil, fmt.Errorf("could not decode JSON - '%v' - %w", flag, err)
 	}
 
-	values := v.AllSettings()
-	d.Logger.Debug(values)
-	return jsoniter.Marshal(values)
+	return data, nil
 }
