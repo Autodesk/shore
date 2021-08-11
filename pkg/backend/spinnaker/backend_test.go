@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/Autodeskshore/pkg/shore_testing"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"
@@ -834,57 +835,87 @@ func TestPipelineSaveTriggersAndStagesWithReplacablePipelineID(t *testing.T) {
 }
 
 func TestTestingRemoteSuccess(t *testing.T) {
-	config := `{
-	"application": "test1test2test3",
-	"pipeline": "abc",
-	"tests": {
-		"Test Success": {
-			"execution_args": {
-				"parameters": {
-				"a": "a"
-				}
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]string{
+						"a": "a",
+					},
+				},
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
 			},
-			"assertions": {
-				"testedname": {
-					"expected_status": "succeeded",
-					"expected_output": {
-						"test": "123"
-					}
-				}
-			}
-		}
+		},
 	}
-}
-`
 
 	err := cli.TestPipeline(config, func() {})
 
 	assert.Nil(t, err)
 }
 
-func TestTestingRemoteNoAssertionFailed(t *testing.T) {
-	config := `{
-	"application": "test1test2test3",
-	"pipeline": "abc",
-	"tests": {
-		"Test Success": {
-			"execution_args": {
-				"parameters": {
-				"a": "a"
-				}
+func TestTestingRemoteNoTestsFound(t *testing.T) {
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Ordering:    []string{"non-existant test"},
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]string{
+						"a": "a",
+					},
+				},
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
 			},
-			"assertions": {
-				"testedname": {
-					"expected_status": "succeeded",
-					"expected_output": {
-						"test": "1234"
-					}
-				}
-			}
-		}
+		},
 	}
+
+	execError := "`non-existant test` failure:\nmissing assertion for stage testedname\n\n"
+
+	err := cli.TestPipeline(config, func() {})
+
+	assert.NotNil(t, err)
+	assert.Equal(t, execError, err.Error())
 }
-`
+
+func TestTestingRemoteNoAssertionFailed(t *testing.T) {
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]string{
+						"a": "a",
+					},
+				},
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "1234",
+						},
+					},
+				},
+			},
+		},
+	}
 
 	err := cli.TestPipeline(config, func() {})
 
@@ -892,17 +923,16 @@ func TestTestingRemoteNoAssertionFailed(t *testing.T) {
 }
 
 func TestTestingRemoteNoAssertionForStageError(t *testing.T) {
-	config := `{
-	"application": "test1test2test3",
-	"pipeline": "abc",
-	"tests": {
-		"Test Success": {
-			"execution_args": {},
-			"assertions": {}
-		}
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs:   map[string]interface{}{},
+				Assertions: map[string]shore_testing.Assertion{},
+			},
+		},
 	}
-}
-`
 
 	err := cli.TestPipeline(config, func() {})
 
@@ -910,23 +940,22 @@ func TestTestingRemoteNoAssertionForStageError(t *testing.T) {
 }
 
 func TestTestingRemoteMissingExecArgs(t *testing.T) {
-	config := `{
-	"application": "test1test2test3",
-	"pipeline": "abc",
-	"tests": {
-		"Test Success": {
-			"assertions": {
-				"testedname": {
-					"expected_status": "succeeded",
-					"expected_output": {
-						"test": "123"
-					}
-				}
-			}
-		}
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
 	}
-}
-`
 
 	err := cli.TestPipeline(config, func() {})
 
@@ -934,22 +963,21 @@ func TestTestingRemoteMissingExecArgs(t *testing.T) {
 }
 
 func TestTestingNoApplicationFailed(t *testing.T) {
-	config := `{
-	"application": "test1test2test3",
-	"tests": {
-		"Test Success": {
-			"assertions": {
-				"testedname": {
-					"expected_status": "succeeded",
-					"expected_output": {
-						"test": "123"
-					}
-				}
-			}
-		}
+	config := shore_testing.TestsConfig{
+		Pipeline: "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
 	}
-}
-`
 
 	err := cli.TestPipeline(config, func() {})
 
@@ -957,22 +985,21 @@ func TestTestingNoApplicationFailed(t *testing.T) {
 }
 
 func TestTestingNoPipelineFailed(t *testing.T) {
-	config := `{
-	"pipeline": "abc",
-	"tests": {
-		"Test Success": {
-			"assertions": {
-				"testedname": {
-					"expected_status": "succeeded",
-					"expected_output": {
-						"test": "123"
-					}
-				}
-			}
-		}
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
 	}
-}
-`
 
 	err := cli.TestPipeline(config, func() {})
 
@@ -980,29 +1007,28 @@ func TestTestingNoPipelineFailed(t *testing.T) {
 }
 
 func TestTestingBadTimeout(t *testing.T) {
-	config := `{
-		"application": "test1test2test3",
-		"pipeline": "abc",
-		"timeout": -1,
-		"tests": {
-			"Test Success": {
-				"execution_args": {
-					"parameters": {
-					"a": "a"
-					}
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Timeout:     -1,
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]string{
+						"a": "a",
+					},
 				},
-				"assertions": {
+				Assertions: map[string]shore_testing.Assertion{
 					"testedname": {
-						"expected_status": "succeeded",
-						"expected_output": {
-							"test": "123"
-						}
-					}
-				}
-			}
-		}
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
 	}
-	`
 
 	err := cli.TestPipeline(config, func() {})
 
@@ -1010,29 +1036,28 @@ func TestTestingBadTimeout(t *testing.T) {
 }
 
 func TestTestingTimeout(t *testing.T) {
-	config := `{
-		"application": "timeout-app",
-		"pipeline": "abc",
-		"timeout": 1,
-		"tests": {
-			"Test Success": {
-				"execution_args": {
-					"parameters": {
-					"a": "a"
-					}
+	config := shore_testing.TestsConfig{
+		Application: "timeout-app",
+		Pipeline:    "abc",
+		Timeout:     1,
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]string{
+						"a": "a",
+					},
 				},
-				"assertions": {
+				Assertions: map[string]shore_testing.Assertion{
 					"testedname": {
-						"expected_status": "succeeded",
-						"expected_output": {
-							"test": "123"
-						}
-					}
-				}
-			}
-		}
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
 	}
-	`
 
 	err := cli.TestPipeline(config, func() {})
 

@@ -13,5 +13,6 @@ shore*
 !docs/**/shore*
 !examples/**/shore*
 !cmd/shore
+!pkg/shore_testing
 dist/
 coverage_*.out
