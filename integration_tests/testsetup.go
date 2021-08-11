@@ -11,15 +11,13 @@ import (
 	"github.com/Autodeskshore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
-	"github.com/spf13/viper"
 )
 
 var testPath string = "/test"
 
 func SetupTest(t *testing.T, f func(*testing.T, *command.Dependencies)) {
-
-	viper.Set("LOCAL", true)
-	viper.Set("SHORE_PROJECT_PATH", testPath)
+	os.Setenv("LOCAL", "true")
+	os.Setenv("SHORE_PROJECT_PATH", testPath)
 
 	memFs := afero.NewMemMapFs()
 	memFs.Mkdir(testPath, os.ModePerm)
@@ -41,7 +39,4 @@ func SetupTest(t *testing.T, f func(*testing.T, *command.Dependencies)) {
 	}
 
 	f(t, deps)
-	// viper instance is global so every test will require a reset of configuration
-	// TODO: test parallelism
-	viper.Reset()
 }

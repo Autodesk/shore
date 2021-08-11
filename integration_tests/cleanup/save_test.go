@@ -10,7 +10,6 @@ import (
 	"github.com/Autodeskshore/pkg/cleanup_command"
 	"github.com/Autodeskshore/pkg/command"
 	"github.com/spf13/afero"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,6 +34,8 @@ func TestSuccessfulSaveWithConfigFile(t *testing.T) {
 		// Test
 
 		saveCmd := cleanup_command.NewSaveCommand(deps)
+		saveCmd.SilenceErrors = true
+		saveCmd.SilenceUsage = true
 		err := saveCmd.Execute()
 
 		// Assert
@@ -62,6 +63,8 @@ func TestFailedSaveMissingParam(t *testing.T) {
 
 		// Test
 		saveCmd := cleanup_command.NewSaveCommand(deps)
+		saveCmd.SilenceErrors = true
+		saveCmd.SilenceUsage = true
 		err := saveCmd.Execute()
 
 		// Assert
@@ -75,9 +78,6 @@ func TestSuccessSaveCommandLineRenderParams(t *testing.T) {
 		// Given
 		renderConfig := `{"application":"Third Application"}`
 
-		viper.Set("render-values", renderConfig)
-		command.GetConfigFileOrFlag(deps, "render", "values")
-
 		pipeline := `
 		function(params={})(
 			{
@@ -90,6 +90,10 @@ func TestSuccessSaveCommandLineRenderParams(t *testing.T) {
 
 		// Test
 		saveCmd := cleanup_command.NewSaveCommand(deps)
+		saveCmd.SilenceErrors = true
+		saveCmd.SilenceUsage = true
+
+		saveCmd.Flags().Set("render-values", renderConfig)
 		err := saveCmd.Execute()
 
 		// Assert

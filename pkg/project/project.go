@@ -7,7 +7,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
-	"github.com/spf13/viper"
 )
 
 type Project struct {
@@ -33,9 +32,10 @@ func (p *Project) GetProjectPath() (string, error) {
 	// Magic variable to allow working shore without actually being in the path
 	// For dev purposes only!!
 	p.Log.Debug("Lazy Loading project path")
-	if isLocal := viper.GetBool("LOCAL"); isLocal == true {
+
+	if isLocal := os.Getenv("LOCAL"); isLocal == "true" {
 		p.Log.Debug("Found local development setup, using `SHORE_PROJECT_PATH` env variable")
-		projectPath := viper.GetString("SHORE_PROJECT_PATH")
+		projectPath := os.Getenv("SHORE_PROJECT_PATH")
 		p.Log.Debug("`SHORE_PROJECT_PATH` set too ", projectPath)
 		if projectPath == "" {
 			return "", fmt.Errorf("env variable `SHORE_PROJECT_PATH` is not set")

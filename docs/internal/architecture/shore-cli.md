@@ -74,6 +74,4 @@ tests:
 
 ## Implementation specific details
 
-`shore-cli` uses [`spf13/cobra`](https://github.com/spf13/cobra) & [`spf13/viper`](https://github.com/spf13/viper) for all `CLI` interactions.
-
-These libraries are mature, very well documented, and used by [many projects](https://pkg.go.dev/github.com/spf13/cobra?tab=importedby).
+`shore-cli` uses [`spf13/cobra`](https://github.com/spf13/cobra) for all `CLI` interactions.

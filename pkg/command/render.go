@@ -1,16 +1,18 @@
 package command
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewRenderCommand - A Cobra wrapper for the common Render function.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
 func NewRenderCommand(d *Dependencies) *cobra.Command {
+	var renderValues string
+
 	cmd := &cobra.Command{
 		Use:   "render",
 		Short: "Render the pipeline",
@@ -18,10 +20,11 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 Automatically reads libraries from "vendor/". The Jsonnet-Bundler default path for libraries`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			settingsBytes, err := GetConfigFileOrFlag(d, "render", "values")
+			settingsBytes, err := GetConfigFileOrFlag(d, "render", renderValues)
 
-			if _, ok := err.(viper.ConfigFileNotFoundError); err != nil && !ok {
-				d.Logger.Error("Renderer values could not be loaded, returned an error ", err)
+			var confErr *DefaultConfErr
+
+			if err != nil && !errors.As(errors.Unwrap(err), &confErr) {
 				return err
 			}
 
@@ -36,8 +39,7 @@ Automatically reads libraries from "vendor/". The Jsonnet-Bundler default path f
 		},
 	}
 
-	cmd.Flags().StringP("values", "r", "", "A JSON string for the render. If not provided the render.[json/yml/yaml] file is used.")
-	viper.BindPFlag("values", cmd.Flags().Lookup("values"))
+	cmd.Flags().StringVarP(&renderValues, "values", "r", "", "A JSON string for the render. If not provided the render.[json/yml/yaml] file is used.")
 
 	return cmd
 }

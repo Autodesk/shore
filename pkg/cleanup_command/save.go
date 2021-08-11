@@ -6,12 +6,13 @@ import (
 	"github.com/Autodeskshore/pkg/command"
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // NewSaveCommand - Using a Project, Renderer & Backend, renders and saves a pipeline.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
 func NewSaveCommand(d *command.Dependencies) *cobra.Command {
+	var renderValues string
+
 	cmd := &cobra.Command{
 		Use:   "save",
 		Short: "save the cleanup pipeline",
@@ -19,7 +20,7 @@ func NewSaveCommand(d *command.Dependencies) *cobra.Command {
 Help in developing and debugging cleanup pipelines in a live environment.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := command.GetConfigFileOrFlag(d, "cleanup/render", "render-values")
+			settingsBytes, err := command.GetConfigFileOrFlag(d, "cleanup/render", renderValues)
 
 			pipeline, err := command.Render(d, settingsBytes, renderer.CleanUpFileName)
 
@@ -41,8 +42,7 @@ Help in developing and debugging cleanup pipelines in a live environment.
 		},
 	}
 
-	cmd.Flags().StringP("render-values", "r", "", "A JSON string for the render. If not provided the render.[json/yml/yaml] file is used.")
-	viper.BindPFlag("render-values", cmd.Flags().Lookup("render-values"))
+	cmd.Flags().StringVarP(&renderValues, "render-values", "r", "", "A JSON string for the render. If not provided the render.[json/yml/yaml] file is used.")
 
 	return cmd
 }

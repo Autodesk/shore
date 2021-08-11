@@ -36,6 +36,8 @@ func TestSuccessfulRemoteTestWithConfigFile(t *testing.T) {
 
 		// Test
 		testRemoteCmd := command.NewTestRemoteCommand(deps)
+		testRemoteCmd.SilenceErrors = true
+		testRemoteCmd.SilenceUsage = true
 		err := testRemoteCmd.Execute()
 
 		// Assert

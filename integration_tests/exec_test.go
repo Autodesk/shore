@@ -7,7 +7,6 @@ import (
 
 	"github.com/Autodeskshore/pkg/command"
 	"github.com/spf13/afero"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +19,8 @@ func TestSuccessfulExecWithConfigFile(t *testing.T) {
 
 		// Test
 		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
 		err := execCmd.Execute()
 
 		// Assert
@@ -32,11 +33,11 @@ func TestSuccessfulExecWithFlag(t *testing.T) {
 		// Given
 		execConfig := `{"application": "First Application", "pipeline": "First Pipeline"}`
 
-		viper.Set("payload", execConfig)
-		command.GetConfigFileOrFlag(deps, "exec", "payload")
-
 		// Test
 		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
+		execCmd.Flags().Set("payload", execConfig)
 		err := execCmd.Execute()
 
 		// Assert
@@ -54,6 +55,8 @@ func TestFailureExecWithConfigFileMissingParameter(t *testing.T) {
 
 		// Test
 		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
 		err := execCmd.Execute()
 
 		// Assert
@@ -68,15 +71,15 @@ func TestFailureExecWithFlagMissingParameter(t *testing.T) {
 		execError := "required args key 'pipeline' missing"
 		execConfig := `{"application": "First Application"}`
 
-		viper.Set("payload", execConfig)
-		command.GetConfigFileOrFlag(deps, "exec", "payload")
-
 		// Test
 		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
+		execCmd.Flags().Set("payload", execConfig)
 		err := execCmd.Execute()
 
 		// Assert
-		assert.NotNil(t, err)
+		assert.Error(t, err)
 		assert.Equal(t, execError, err.Error())
 	})
 }
@@ -84,36 +87,34 @@ func TestFailureExecWithFlagMissingParameter(t *testing.T) {
 func TestFailureExecWithConfigFileBadPayload(t *testing.T) {
 	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
-		execError := "ReadMapCB: expect { or n, but found \x00, error found in #0 byte of ...||..., bigger context ...||..."
 		execConfig := `{"application": "First Application",}`
 
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "exec.json"), []byte(execConfig), os.ModePerm)
 
 		// Test
 		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
 		err := execCmd.Execute()
 
 		// Assert
-		assert.NotNil(t, err)
-		assert.Equal(t, execError, err.Error())
+		assert.Error(t, err)
 	})
 }
 
 func TestFailureExecWithFlagBadPayload(t *testing.T) {
 	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
-		execError := "required args key 'pipeline' missing\nrequired args key 'application' missing"
 		execConfig := `{"application": "First Application",  "pipeline": "First Pipeline" ,,,,,,}`
-
-		viper.Set("payload", execConfig)
-		command.GetConfigFileOrFlag(deps, "exec", "payload")
 
 		// Test
 		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
+		execCmd.Flags().Set("payload", execConfig)
 		err := execCmd.Execute()
 
 		// Assert
-		assert.NotNil(t, err)
-		assert.Equal(t, execError, err.Error())
+		assert.Error(t, err)
 	})
 }
