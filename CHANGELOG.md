@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.0.8](https://github.com/Autodeskshore/releases/tag/v0.0.8) (2021-08-11)
+
+[Full Changelog](https://github.com/Autodeskshore/compare/v0.0.7...v0.0.8)
+
+**Fixed bugs:**
+
+- Regressions - Any trigger that isn't a pipeline trigger causes a panic [\#145](https://github.com/Autodeskshore/issues/145)
+
 ## [v0.0.7](https://github.com/Autodeskshore/releases/tag/v0.0.7) (2021-07-15)
 
 [Full Changelog](https://github.com/Autodeskshore/compare/v0.0.6...v0.0.7)
