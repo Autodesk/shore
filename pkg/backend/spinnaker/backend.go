@@ -70,7 +70,7 @@ func (s *SpinClient) initializeAPI() error {
 	// If the client is already initialized, not
 	if s.SpinCLI == nil && s.CustomSpinCLI == nil {
 		s.initOnce.Do(func() {
-			gateClient, err := spinGate.NewGateClient(&UI{}, "", "", "", true)
+			gateClient, err := spinGate.NewGateClient(&UI{}, "", "", "", false)
 
 			if err != nil {
 				outerErr = err
