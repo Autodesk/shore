@@ -126,7 +126,7 @@ func TestInternalSaveFailedName(t *testing.T) {
 
 func TestExecSuccess(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": 42}}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": 42}}`, true)
 
 	// Assert
 	assert.Nil(t, err)
@@ -135,7 +135,7 @@ func TestExecSuccess(t *testing.T) {
 
 func TestExecFailedApplication(t *testing.T) {
 	// Test
-	_, _, err := cli.ExecutePipeline(`{"pipeline": "test"}`)
+	_, _, err := cli.ExecutePipeline(`{"pipeline": "test"}`, true)
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'application' missing")
@@ -143,7 +143,7 @@ func TestExecFailedApplication(t *testing.T) {
 
 func TestExecFailedName(t *testing.T) {
 	// Test
-	_, _, err := cli.ExecutePipeline(`{"application": "test"}`)
+	_, _, err := cli.ExecutePipeline(`{"application": "test"}`, true)
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'pipeline' missing")
@@ -151,7 +151,7 @@ func TestExecFailedName(t *testing.T) {
 
 func TestExecArgsFailing(t *testing.T) {
 	// Test
-	_, _, err := cli.ExecutePipeline(`{}`)
+	_, _, err := cli.ExecutePipeline(`{}`, true)
 
 	// Assert
 	assert.EqualError(t, err, "required args key 'pipeline' missing\nrequired args key 'application' missing")
@@ -159,7 +159,7 @@ func TestExecArgsFailing(t *testing.T) {
 
 func TestExecParametersMap(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": {"abc123": "abc123"}}}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": {"abc123": "abc123"}}}`, true)
 	body, _ := ioutil.ReadAll(res.Request.Body)
 
 	// Assert
@@ -169,7 +169,7 @@ func TestExecParametersMap(t *testing.T) {
 
 func TestExecParametersArray(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1,2,3,4, "5", "this is something"]}}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1,2,3,4, "5", "this is something"]}}`, true)
 	body, _ := ioutil.ReadAll(res.Request.Body)
 
 	// Assert
@@ -179,7 +179,7 @@ func TestExecParametersArray(t *testing.T) {
 
 func TestExecParametersArrayMap(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1, 2, 3, "abc", {"answer": 42}]}}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1, 2, 3, "abc", {"answer": 42}]}}`, true)
 	body, _ := ioutil.ReadAll(res.Request.Body)
 
 	// Assert
@@ -189,7 +189,7 @@ func TestExecParametersArrayMap(t *testing.T) {
 
 func TestExecParametersNonMapFails(t *testing.T) {
 	// Test
-	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": [1, 2, 3, "abc", {"answer": 42}]}`)
+	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": [1, 2, 3, "abc", {"answer": 42}]}`, true)
 
 	// Assert
 	assert.EqualError(t, err, "`parameters` must be an object")
@@ -197,7 +197,7 @@ func TestExecParametersNonMapFails(t *testing.T) {
 
 func TestExecExtraFields(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "github": {"commit": "deadbeef", "branch": "dev"}, "pipeline": "test", "parameters": {}, "artifacts": []}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "github": {"commit": "deadbeef", "branch": "dev"}, "pipeline": "test", "parameters": {}, "artifacts": []}`, true)
 	bodyString, _ := ioutil.ReadAll(res.Request.Body)
 	var body map[string]interface{}
 	jsoniter.Unmarshal([]byte(bodyString), &body)
@@ -212,7 +212,7 @@ func TestExecExtraFields(t *testing.T) {
 
 func TestExecArtifactsArray(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": [{"type": "custom/object", "name": "test-artifact-one", "reference": "test-value-one"}, {"type": "custom/object", "name": "test-artifact-two", "reference": "test-value-two"}]}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": [{"type": "custom/object", "name": "test-artifact-one", "reference": "test-value-one"}, {"type": "custom/object", "name": "test-artifact-two", "reference": "test-value-two"}]}`, true)
 	bodyString, _ := ioutil.ReadAll(res.Request.Body)
 	var body map[string]interface{}
 	jsoniter.Unmarshal([]byte(bodyString), &body)
@@ -226,7 +226,7 @@ func TestExecArtifactsArray(t *testing.T) {
 
 func TestExecArtifactsEmptyArray(t *testing.T) {
 	// Test
-	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": []}`)
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": []}`, true)
 	bodyString, _ := ioutil.ReadAll(res.Request.Body)
 	var body map[string]interface{}
 	jsoniter.Unmarshal([]byte(bodyString), &body)
@@ -240,7 +240,7 @@ func TestExecArtifactsEmptyArray(t *testing.T) {
 
 func TestExecArtifactsNonArrayFails(t *testing.T) {
 	// Test
-	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": {"type": "potato"}}`)
+	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": {"type": "potato"}}`, true)
 
 	// Assert
 	assert.EqualError(t, err, "`artifacts` must be an Array")
@@ -248,10 +248,30 @@ func TestExecArtifactsNonArrayFails(t *testing.T) {
 
 func TestExecArtifactsArrayNonObjectsFails(t *testing.T) {
 	// Test
-	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": ["potato", 1, ["apple", "orange"]]}`)
+	_, _, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "artifacts": ["potato", 1, ["apple", "orange"]]}`, true)
 
 	// Assert
 	assert.EqualError(t, err, "an artifact in `artifacts` must be an object")
+}
+
+func TestExecParametersArrayMapStringifyFalse(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1, 2, 3, "abc", {"answer": 42}]}}`, false)
+	body, _ := ioutil.ReadAll(res.Request.Body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, `{"parameters":{"answer":[1,2,3,"abc",{"answer":42}]}}`, string(body))
+}
+
+func TestExecParametersArrayMapStringifyTrue(t *testing.T) {
+	// Test
+	_, res, err := cli.ExecutePipeline(`{"application": "test", "pipeline": "test", "parameters": {"answer": [1, 2, 3, "abc", {"answer": 42}]}}`, true)
+	body, _ := ioutil.ReadAll(res.Request.Body)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, `{"parameters":{"answer":"[1,2,3,\"abc\",{\"answer\":42}]"}}`, string(body))
 }
 
 func TestSaveSuccess(t *testing.T) {
@@ -857,7 +877,7 @@ func TestTestingRemoteSuccess(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Nil(t, err)
 }
@@ -888,7 +908,7 @@ func TestTestingRemoteNoTestsFound(t *testing.T) {
 
 	execError := "`non-existant test` failure:\nmissing assertion for stage testedname\n\n"
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.NotNil(t, err)
 	assert.Equal(t, execError, err.Error())
@@ -917,7 +937,7 @@ func TestTestingRemoteNoAssertionFailed(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Error(t, err)
 }
@@ -934,7 +954,7 @@ func TestTestingRemoteNoAssertionForStageError(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Error(t, err)
 }
@@ -957,7 +977,7 @@ func TestTestingRemoteMissingExecArgs(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Nil(t, err)
 }
@@ -979,7 +999,7 @@ func TestTestingNoApplicationFailed(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Error(t, err)
 }
@@ -1001,7 +1021,7 @@ func TestTestingNoPipelineFailed(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Error(t, err)
 }
@@ -1030,7 +1050,7 @@ func TestTestingBadTimeout(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Error(t, err)
 }
@@ -1059,7 +1079,67 @@ func TestTestingTimeout(t *testing.T) {
 		},
 	}
 
-	err := cli.TestPipeline(config, func() {})
+	err := cli.TestPipeline(config, func() {}, true)
 
 	assert.Error(t, err)
+}
+
+func TestTestingRemoteStringifyTrue(t *testing.T) {
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"answer": map[string]string{
+							"abc123": "abc123",
+						},
+					},
+				},
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := cli.TestPipeline(config, func() {}, true)
+
+	assert.Nil(t, err)
+}
+
+func TestTestingRemoteStringifyFalse(t *testing.T) {
+	config := shore_testing.TestsConfig{
+		Application: "test1test2test3",
+		Pipeline:    "abc",
+		Tests: map[string]shore_testing.TestConfig{
+			"test success": {
+				ExecArgs: map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"answer": map[string]string{
+							"abc123": "abc123",
+						},
+					},
+				},
+				Assertions: map[string]shore_testing.Assertion{
+					"testedname": {
+						ExpectedStatus: "succeeded",
+						ExpectedOutput: map[string]interface{}{
+							"test": "123",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := cli.TestPipeline(config, func() {}, false)
+
+	assert.Nil(t, err)
 }
