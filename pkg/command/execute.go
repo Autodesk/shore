@@ -17,6 +17,7 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 	var withSilent bool
 	var waitTimeout int
 	var withPayload string
+	var stringifyNonScalars bool
 
 	cmd := &cobra.Command{
 		Use:   "exec",
@@ -32,8 +33,10 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 			// A bit of a hack, rather change this to an object later on.
 			execArgs := string(settingsBytes)
 
+			d.Logger.Debug("Stringify is ", stringifyNonScalars)
+
 			d.Logger.Debug("Calling `Backend.ExecutePipeline`")
-			refID, res, err := d.Backend.ExecutePipeline(execArgs)
+			refID, res, err := d.Backend.ExecutePipeline(execArgs, stringifyNonScalars)
 
 			if err != nil {
 				return err
@@ -73,6 +76,7 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 	cmd.Flags().BoolVarP(&withSilent, "silent", "s", false, "Do not print JSON response to STDOUT")
 	cmd.Flags().IntVarP(&waitTimeout, "timeout", "t", 60, "how long to wait (Seconds) for the pipeline to finish in Seconds. Yes Seconds.")
 	cmd.Flags().StringVarP(&withPayload, "payload", "p", "", "A JSON payload string. If not provided the exec.[json/yml/yaml] file is used.")
+	cmd.Flags().BoolVarP(&stringifyNonScalars, "stringify", "y", true, "Stringifies the non scalar parameters to SpinCli")
 
 	return cmd
 }

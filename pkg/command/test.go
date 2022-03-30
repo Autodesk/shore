@@ -20,6 +20,7 @@ Testing implementation should be defined on the `backend` level.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang/etc...) and backends (Spinnaker/Tekton/ArgoCD/JenkinsX/etc...)
 func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 	var testNames []string
+	var stringifyNonScalars bool
 
 	cmd := &cobra.Command{
 		Use:   "test-remote",
@@ -48,7 +49,9 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 				}
 			}
 
-			err = d.Backend.TestPipeline(testConfig, func() {})
+			d.Logger.Debug("Stringify is ", stringifyNonScalars)
+
+			err = d.Backend.TestPipeline(testConfig, func() {}, stringifyNonScalars)
 
 			if err != nil {
 				return err
@@ -61,6 +64,7 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().StringSliceVarP(&testNames, "test-names", "t", []string{}, "An array of tests that will be ran. Preserves order.")
+	cmd.Flags().BoolVarP(&stringifyNonScalars, "stringify", "y", true, "Stringifies the non scalar parameters to SpinCli")
 
 	return cmd
 }

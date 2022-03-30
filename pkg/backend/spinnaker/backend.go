@@ -225,7 +225,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 // ExecutePipeline - Execute a spinnaker pipeline.
 //
 // `patameters` are optional.
-func (s *SpinClient) ExecutePipeline(argsJSON string) (string, *http.Response, error) {
+func (s *SpinClient) ExecutePipeline(argsJSON string, stringify bool) (string, *http.Response, error) {
 	// For some crazy reason, spincli invoke doesn't return the ID of the pipeline execution.
 	// BTW the crazy reason is that `swagger-code-gen` produces wrong code and Spin-Cli (and shore...) depends on this wrong code.
 	// So this request needs to be done 100% manually.
@@ -261,15 +261,16 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (string, *http.Response, e
 		if reflect.TypeOf(params).Kind() != reflect.Map {
 			return "", &http.Response{}, fmt.Errorf("`parameters` must be an object")
 		}
+		if stringify {
+			parameters := args["parameters"].(map[string]interface{})
 
-		parameters := args["parameters"].(map[string]interface{})
-
-		for key, val := range parameters {
-			switch v := val.(type) {
-			case map[string]interface{}, []interface{}:
-				{
-					semiMarshal, _ := jsoniter.Marshal(v)
-					parameters[key] = string(semiMarshal)
+			for key, val := range parameters {
+				switch v := val.(type) {
+				case map[string]interface{}, []interface{}:
+					{
+						semiMarshal, _ := jsoniter.Marshal(v)
+						parameters[key] = string(semiMarshal)
+					}
 				}
 			}
 		}
@@ -315,7 +316,7 @@ func (s *SpinClient) ExecutePipeline(argsJSON string) (string, *http.Response, e
 // Currently returns a not-so-well formatted error.
 // The indended solution is to create a shared API between `shore-cli` & the `backend` to expect well formatted struct for the CLI to render correctly.
 // TODO: Design a struct to pass data back to `shore-cli` so the UI layer could render the test-results correctly.
-func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange func()) error {
+func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange func(), stringify bool) error {
 	s.log.Info("Starting test suite")
 
 	if err := s.initializeAPI(); err != nil {
@@ -368,7 +369,7 @@ func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange
 			return err
 		}
 		s.log.Info("Executing pipeline for test: ", testName)
-		refID, _, err := s.ExecutePipeline(string(execArgs))
+		refID, _, err := s.ExecutePipeline(string(execArgs), stringify)
 
 		if err != nil {
 			s.log.Debug("Pipeline execution failed for test: ", testName)
