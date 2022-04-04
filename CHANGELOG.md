@@ -1,5 +1,33 @@
 # Changelog
 
+## [v0.0.9](https://github.com/Autodeskshore/releases/tag/v0.0.9) (2022-04-04)
+
+[Full Changelog](https://github.com/Autodeskshore/compare/v0.0.8...v0.0.9)
+
+**Implemented enhancements:**
+
+- Target specific application / Skip stages [\#173](https://github.com/Autodeskshore/issues/173)
+- Upgrade CI/CD to use golang 1.17 [\#161](https://github.com/Autodeskshore/issues/161)
+- JSONNET Renderer - Unit Testing \(planning\) [\#29](https://github.com/Autodeskshore/issues/29)
+
+**Fixed bugs:**
+
+- Mismatch in passing in parameter blobs from E2E.yml and parameter blobs from exec.yml  [\#175](https://github.com/Autodeskshore/issues/175)
+- Remove Viper as the config manager [\#127](https://github.com/Autodeskshore/issues/127)
+- Shore renders nested variables in an unexpected way [\#122](https://github.com/Autodeskshore/issues/122)
+- Shore render lowercases all parameters, this affects usability. [\#83](https://github.com/Autodeskshore/issues/83)
+
+**Documentation updates:**
+
+- Release Plan Alpha V1 [\#79](https://github.com/Autodeskshore/issues/79)
+
+**Closed issues:**
+
+- Migrate to Golang 1.18 [\#181](https://github.com/Autodeskshore/issues/181)
+- add ability to specify the test-suite to be run [\#149](https://github.com/Autodeskshore/issues/149)
+- Sometimes save works, but exec and test-remote get X509 cert errors [\#148](https://github.com/Autodeskshore/issues/148)
+- Update go-jsonnet to `latest` [\#77](https://github.com/Autodeskshore/issues/77)
+
 ## [v0.0.8](https://github.com/Autodeskshore/releases/tag/v0.0.8) (2021-08-11)
 
 [Full Changelog](https://github.com/Autodeskshore/compare/v0.0.7...v0.0.8)
