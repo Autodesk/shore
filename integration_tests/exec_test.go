@@ -45,6 +45,42 @@ func TestSuccessfulExecWithFlag(t *testing.T) {
 	})
 }
 
+func TestSuccessfulExecWithStringifyFlagTrue(t *testing.T) {
+	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Given
+		execConfig := `{"application": "First Application", "pipeline": "First Pipeline", "parameters": {"answer": {"abc123": "abc123"}}}`
+
+		// Test
+		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
+		execCmd.Flags().Set("payload", execConfig)
+		execCmd.Flags().Set("stringify", "true")
+		err := execCmd.Execute()
+
+		// Assert
+		assert.Nil(t, err)
+	})
+}
+
+func TestSuccessfulExecWithStringifyFlagFalse(t *testing.T) {
+	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Given
+		execConfig := `{"application": "First Application", "pipeline": "First Pipeline", "parameters": {"answer": {"abc123": "abc123"}}}`
+
+		// Test
+		execCmd := command.NewExecCommand(deps, "exec")
+		execCmd.SilenceErrors = true
+		execCmd.SilenceUsage = true
+		execCmd.Flags().Set("payload", execConfig)
+		execCmd.Flags().Set("stringify", "false")
+		err := execCmd.Execute()
+
+		// Assert
+		assert.Nil(t, err)
+	})
+}
+
 func TestFailureExecWithConfigFileMissingParameter(t *testing.T) {
 	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
