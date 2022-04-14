@@ -46,7 +46,7 @@ func TestSuccessfulSaveWithConfigFile(t *testing.T) {
 func TestFailedSaveMissingParam(t *testing.T) {
 	integration_tests.SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
-		expectedErrorMessage := fmt.Sprintf("RUNTIME ERROR: Field does not exist: pipeline\n\t%s/cleanup/cleanup.pipeline.jsonnet:5:11-26\tobject <anonymous>\n\tDuring manifestation\t\n", testPath)
+		expectedErrorMessage := fmt.Sprintf("RUNTIME ERROR: Field does not exist: pipeline\n\t%s/cleanup/cleanup.pipeline.jsonnet:5:11-26\tobject <anonymous>\n\tField \"name\"\t\n\tDuring manifestation\t\n", testPath)
 
 		renderConfig := `{"application":"Fourth Application"}`
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "cleanup/render.json"), []byte(renderConfig), os.ModePerm)

@@ -20,7 +20,7 @@ github.com/davecgh/go-spew/spew
 github.com/fatih/color
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
-# github.com/google/go-jsonnet v0.17.0
+# github.com/google/go-jsonnet v0.18.0
 ## explicit
 github.com/google/go-jsonnet
 github.com/google/go-jsonnet/ast
