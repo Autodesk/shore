@@ -211,7 +211,7 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 
 	} else if queryResp.StatusCode == http.StatusNotFound {
 		// pipeline doesn't exists, let's create a new one
-		s.log.Info("Pipeline ", pipelineName, "not found in application ", application)
+		s.log.Info("Pipeline ", pipelineName, " not found in application ", application)
 	} else {
 		b, _ := ioutil.ReadAll(queryResp.Body)
 		return pipelineID, nil, fmt.Errorf("unhandled response %d: %s", queryResp.StatusCode, b)
