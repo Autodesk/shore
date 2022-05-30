@@ -20,7 +20,7 @@ func NewSaveCommand(d *command.Dependencies) *cobra.Command {
 Help in developing and debugging cleanup pipelines in a live environment.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := command.GetConfigFileOrFlag(d, "cleanup/render", renderValues)
+			settingsBytes, _ := command.GetConfigFileOrFlag(d.Project, "cleanup/render", renderValues)
 
 			pipeline, err := command.Render(d, settingsBytes, renderer.CleanUpFileName)
 

@@ -24,7 +24,7 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 		Short: "Executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := GetConfigFileOrFlag(d, configPath, withPayload)
+			settingsBytes, err := GetConfigFileOrFlag(d.Project, configPath, withPayload)
 
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				return err

@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/Autodeskshore/pkg/project"
+
 	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/afero"
@@ -35,10 +37,10 @@ func getExtensions() []string {
 	return []string{"json", "yaml", "yml"}
 }
 
-func GetConfigFileOrFlag(d *Dependencies, fileName string, flag string) ([]byte, error) {
+func GetConfigFileOrFlag(p *project.Project, fileName string, flag string) ([]byte, error) {
 	var errors FlagErr
 
-	dir, err := d.Project.GetProjectPath()
+	dir, err := p.GetProjectPath()
 
 	if err != nil {
 		return nil, err
@@ -63,7 +65,7 @@ func GetConfigFileOrFlag(d *Dependencies, fileName string, flag string) ([]byte,
 			manualConfigFile = filepath.Join(dir, flag)
 		}
 
-		if data, err := readConfigFile(d, manualConfigFile); err != nil {
+		if data, err := readConfigFile(p, manualConfigFile); err != nil {
 			errors.Err = multierror.Append(errors.Err, fmt.Errorf("could not find file - '%v'", flag))
 		} else {
 			return data, nil
@@ -75,7 +77,7 @@ func GetConfigFileOrFlag(d *Dependencies, fileName string, flag string) ([]byte,
 	// If the flag isn't set we want to read the config file.
 	var pathErrors DefaultConfErr
 	for _, ext := range getExtensions() {
-		data, err := readConfigFile(d, filepath.Join(dir, fmt.Sprintf("%s.%s", fileName, ext)))
+		data, err := readConfigFile(p, filepath.Join(dir, fmt.Sprintf("%s.%s", fileName, ext)))
 
 		if err, ok := err.(*fs.PathError); err != nil && ok {
 			pathErrors.Err = multierror.Append(pathErrors.Err, err.Unwrap())
@@ -92,8 +94,8 @@ func GetConfigFileOrFlag(d *Dependencies, fileName string, flag string) ([]byte,
 	return nil, fmt.Errorf("%w", &pathErrors)
 }
 
-func readConfigFile(d *Dependencies, filePath string) ([]byte, error) {
-	data, err := afero.ReadFile(d.Project.FS, filePath)
+func readConfigFile(p *project.Project, filePath string) ([]byte, error) {
+	data, err := afero.ReadFile(p.FS, filePath)
 	extension := filepath.Ext(filePath)
 
 	if err != nil {

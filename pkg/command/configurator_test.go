@@ -15,7 +15,7 @@ var testPath string = "/test"
 func TestFailsWithMissingConfig(t *testing.T) {
 	integ.SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Test
-		_, err := command.GetConfigFileOrFlag(deps, "render", "")
+		_, err := command.GetConfigFileOrFlag(deps.Project, "render", "")
 		// Assert
 		assert.Error(t, err)
 	})
@@ -27,7 +27,7 @@ func TestReadConfigFileJSON(t *testing.T) {
 		renderConfig := `{"a":"a"}`
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "render.json"), []byte(renderConfig), 0644)
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", "")
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", "")
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -40,7 +40,7 @@ func TestReadConfigFileYml(t *testing.T) {
 		renderConfig := `{"a":"a"}`
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "render.yml"), []byte(renderConfig), 0644)
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", "")
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", "")
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -53,7 +53,7 @@ func TestReadConfigFileYaml(t *testing.T) {
 		renderConfig := `{"a":"a"}`
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "render.yaml"), []byte(renderConfig), 0644)
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", "")
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", "")
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -65,7 +65,7 @@ func TestFlagWithJson(t *testing.T) {
 		// Given
 		renderConfig := `{"b":"b"}`
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", renderConfig)
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", renderConfig)
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -81,7 +81,7 @@ func TestFlagWithFilepath(t *testing.T) {
 
 		afero.WriteFile(deps.Project.FS, path, []byte(renderConfig), 0644)
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", fileName)
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", fileName)
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -96,7 +96,7 @@ func TestFlagWithFilepathAbs(t *testing.T) {
 
 		afero.WriteFile(deps.Project.FS, path, []byte(renderConfig), 0644)
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", path)
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", path)
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -108,7 +108,7 @@ func TestFlagWithUpperCase(t *testing.T) {
 		// Given
 		renderConfig := `{"B":"b"}`
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", renderConfig)
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", renderConfig)
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -120,7 +120,7 @@ func TestFlagWithDottedKeys(t *testing.T) {
 		// Given
 		renderConfig := `{"B.C.E":"b"}`
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", renderConfig)
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", renderConfig)
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))
@@ -132,7 +132,7 @@ func TestFlagWithMessyData(t *testing.T) {
 		// Given
 		renderConfig := `{"B.C.E":"b", "ABC123": "a", "1": 1, "2": 2}`
 		// Test
-		values, err := command.GetConfigFileOrFlag(deps, "render", renderConfig)
+		values, err := command.GetConfigFileOrFlag(deps.Project, "render", renderConfig)
 		// Assert
 		assert.Nil(t, err)
 		assert.Equal(t, renderConfig, string(values))

@@ -27,7 +27,7 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 		Short: "Run the test suite on a remotely saved pipeline",
 		Long:  "Using the E2E.yaml file run a full test-suite on the pipeline stored in a specific backend",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			testSettingsBytes, err := GetConfigFileOrFlag(d, "E2E", "")
+			testSettingsBytes, err := GetConfigFileOrFlag(d.Project, "E2E", "")
 
 			if err != nil {
 				return err

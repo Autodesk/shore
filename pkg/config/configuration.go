@@ -9,6 +9,7 @@ import (
 
 	"github.com/Autodeskshore/pkg/command"
 	"github.com/Autodeskshore/pkg/project"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v2"
@@ -47,29 +48,28 @@ func findIndividualLocalConfig(p *project.Project, configName string) (string, e
 	return "", nil
 }
 
-func writeShoreConfig(d *command.Dependencies, shoreConfig ShoreConfig) error {
+func writeShoreConfig(p *project.Project, shoreConfig ShoreConfig) error {
 	shoreConfigBytes, err := yaml.Marshal(shoreConfig)
 	if err != nil {
 		return err
 	}
 
-	projectPath, err := d.Project.GetProjectPath()
+	projectPath, err := p.GetProjectPath()
 	if err != nil {
 		return err
 	}
 
 	shoreConfigPath := path.Join(projectPath, "shore.yml")
-	afero.WriteFile(d.Project.FS, shoreConfigPath, shoreConfigBytes, os.ModePerm)
-	d.Logger.Debugf("Created a new shore config located at: %s", shoreConfigPath)
+	afero.WriteFile(p.FS, shoreConfigPath, shoreConfigBytes, os.ModePerm)
+	p.Log.Debugf("Created a new shore config located at: %s", shoreConfigPath)
 	return nil
 }
 
 // LoadShoreConfig - Loads the Shore Config given a Project obj.
-func LoadShoreConfig(d *command.Dependencies) (ShoreConfig, error) {
-	// TODO - change *command.Dependencies to just project.
+func LoadShoreConfig(p *project.Project) (ShoreConfig, error) {
 	var shoreConfig ShoreConfig
 
-	configData, err := command.GetConfigFileOrFlag(d, "shore", "")
+	configData, err := command.GetConfigFileOrFlag(p, "shore", "")
 
 	if err == nil {
 		if err := jsoniter.Unmarshal(configData, &shoreConfig); err != nil {
@@ -77,7 +77,7 @@ func LoadShoreConfig(d *command.Dependencies) (ShoreConfig, error) {
 			return ShoreConfig{}, err
 		}
 
-		d.Project.Log.Debug("Loaded from file Shore Config: ", shoreConfig)
+		p.Log.Debug("Loaded from file Shore Config: ", shoreConfig)
 		return shoreConfig, nil
 	}
 
@@ -101,21 +101,21 @@ func LoadShoreConfig(d *command.Dependencies) (ShoreConfig, error) {
 			},
 		}
 
-		existingRenderPath, err := findIndividualLocalConfig(d.Project, "render")
+		existingRenderPath, err := findIndividualLocalConfig(p, "render")
 		if err != nil {
 			return ShoreConfig{}, err
 		} else if len(existingRenderPath) == 0 {
 			return ShoreConfig{}, fmt.Errorf(`unable to find a render config in the project`)
 		}
 
-		existingExecPath, err := findIndividualLocalConfig(d.Project, "exec")
+		existingExecPath, err := findIndividualLocalConfig(p, "exec")
 		if err != nil {
 			return ShoreConfig{}, err
 		} else if len(existingExecPath) == 0 {
 			return ShoreConfig{}, fmt.Errorf(`unable to find a exec config in the project`)
 		}
 
-		existingE2EPath, err := findIndividualLocalConfig(d.Project, "e2e")
+		existingE2EPath, err := findIndividualLocalConfig(p, "e2e")
 		if err != nil {
 			return ShoreConfig{}, err
 		} else if len(existingE2EPath) == 0 {
@@ -136,9 +136,9 @@ func LoadShoreConfig(d *command.Dependencies) (ShoreConfig, error) {
 			Profiles: defaultProfiles,
 		}
 
-		d.Project.Log.Debug("Loaded default Shore Config: ", shoreConfig)
+		p.Log.Debug("Loaded default Shore Config: ", shoreConfig)
 
-		writeShoreConfig(d, shoreConfig)
+		writeShoreConfig(p, shoreConfig)
 		if err != nil {
 			return ShoreConfig{}, err
 		}
