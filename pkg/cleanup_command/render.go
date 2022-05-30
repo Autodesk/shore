@@ -21,7 +21,7 @@ func NewRenderCommand(d *command.Dependencies) *cobra.Command {
 This helper utility command is used to debug issues when the "cleanup" pipeline doesn't render correctly.`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := command.GetConfigFileOrFlag(d, "cleanup/render", values)
+			settingsBytes, err := command.GetConfigFileOrFlag(d.Project, "cleanup/render", values)
 
 			var confErr *command.DefaultConfErr
 

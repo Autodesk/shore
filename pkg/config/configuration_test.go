@@ -5,7 +5,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/command"
 	"github.com/Autodeskshore/pkg/project"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
@@ -44,15 +43,10 @@ func TestLoadShoreConfigFromFile(t *testing.T) {
 	afero.WriteFile(memFs, path.Join(testPath, "shore.json"), []byte(shoreConfigString), os.ModePerm)
 
 	logger, _ := test.NewNullLogger()
-	deps := &command.Dependencies{
-		Project:  project.NewShoreProject(memFs, logger),
-		Renderer: nil,
-		Backend:  nil,
-		Logger:   logger,
-	}
+	p := project.NewShoreProject(memFs, logger)
 
 	// Test
-	shoreConfig, err := LoadShoreConfig(deps)
+	shoreConfig, err := LoadShoreConfig(p)
 	os.Unsetenv("SHORE_PROJECT_PATH")
 	os.Unsetenv("LOCAL")
 
@@ -84,15 +78,10 @@ func TestLoadShoreConfigFromMalformedFile(t *testing.T) {
 	afero.WriteFile(memFs, path.Join(testPath, "shore.json"), []byte(shoreConfigString), os.ModePerm)
 
 	logger, _ := test.NewNullLogger()
-	deps := &command.Dependencies{
-		Project:  project.NewShoreProject(memFs, logger),
-		Renderer: nil,
-		Backend:  nil,
-		Logger:   logger,
-	}
+	p := project.NewShoreProject(memFs, logger)
 
 	// Test
-	shoreConfig, err := LoadShoreConfig(deps)
+	shoreConfig, err := LoadShoreConfig(p)
 	os.Unsetenv("SHORE_PROJECT_PATH")
 	os.Unsetenv("LOCAL")
 
@@ -120,15 +109,10 @@ func TestLoadShoreConfigFromIncorrectFile(t *testing.T) {
 	afero.WriteFile(memFs, path.Join(testPath, "shore.json"), []byte(shoreConfigString), os.ModePerm)
 
 	logger, _ := test.NewNullLogger()
-	deps := &command.Dependencies{
-		Project:  project.NewShoreProject(memFs, logger),
-		Renderer: nil,
-		Backend:  nil,
-		Logger:   logger,
-	}
+	p := project.NewShoreProject(memFs, logger)
 
 	// Test
-	shoreConfig, err := LoadShoreConfig(deps)
+	shoreConfig, err := LoadShoreConfig(p)
 	os.Unsetenv("SHORE_PROJECT_PATH")
 	os.Unsetenv("LOCAL")
 
@@ -151,15 +135,10 @@ func TestLoadShoreConfigDefault(t *testing.T) {
 	afero.WriteFile(memFs, path.Join(testPath, "E2E.json"), []byte(""), os.ModePerm)
 
 	logger, _ := test.NewNullLogger()
-	deps := &command.Dependencies{
-		Project:  project.NewShoreProject(memFs, logger),
-		Renderer: nil,
-		Backend:  nil,
-		Logger:   logger,
-	}
+	p := project.NewShoreProject(memFs, logger)
 
 	// Test
-	shoreConfig, err := LoadShoreConfig(deps)
+	shoreConfig, err := LoadShoreConfig(p)
 	shoreConfigExists, configErr := afero.Exists(memFs, path.Join(testPath, "shore.yml"))
 	os.Unsetenv("SHORE_PROJECT_PATH")
 	os.Unsetenv("LOCAL")
@@ -182,19 +161,14 @@ func TestLoadShoreConfigMissingDefaultConfigs(t *testing.T) {
 	os.Setenv("SHORE_PROJECT_PATH", testPath)
 
 	logger, _ := test.NewNullLogger()
-	deps := &command.Dependencies{
-		Project:  project.NewShoreProject(memFs, logger),
-		Renderer: nil,
-		Backend:  nil,
-		Logger:   logger,
-	}
+	p := project.NewShoreProject(memFs, logger)
 
 	// Test
-	_, errRender := LoadShoreConfig(deps)
+	_, errRender := LoadShoreConfig(p)
 	afero.WriteFile(memFs, path.Join(testPath, "render.yaml"), []byte(""), os.ModePerm)
-	_, errExec := LoadShoreConfig(deps)
+	_, errExec := LoadShoreConfig(p)
 	afero.WriteFile(memFs, path.Join(testPath, "exec.yml"), []byte(""), os.ModePerm)
-	_, errE2E := LoadShoreConfig(deps)
+	_, errE2E := LoadShoreConfig(p)
 
 	os.Unsetenv("SHORE_PROJECT_PATH")
 	os.Unsetenv("LOCAL")
@@ -215,15 +189,10 @@ func TestLoadShoreConfigBadProjectPath(t *testing.T) {
 	os.Setenv("SHORE_PROJECT_PATH", "/tmp/test")
 
 	logger, _ := test.NewNullLogger()
-	deps := &command.Dependencies{
-		Project:  project.NewShoreProject(memFs, logger),
-		Renderer: nil,
-		Backend:  nil,
-		Logger:   logger,
-	}
+	p := project.NewShoreProject(memFs, logger)
 
 	// Test
-	_, err := LoadShoreConfig(deps)
+	_, err := LoadShoreConfig(p)
 	os.Unsetenv("SHORE_PROJECT_PATH")
 	os.Unsetenv("LOCAL")
 
