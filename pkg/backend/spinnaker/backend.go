@@ -38,6 +38,15 @@ type ApplicationControllerAPI interface {
 	GetPipelineConfigUsingGET(ctx context.Context, application string, pipelineName string) (map[string]interface{}, *http.Response, error)
 }
 
+type TestPipelineResponse struct {
+	testName         string
+	test             shore_testing.TestConfig
+	pipelineID       string
+	response         *http.Response
+	ExecutionDetails *PipelineExecutionDetailsResponse
+	err              error
+}
+
 // PipelineControllerAPI - Interface wrapper for the Pipeline Controller API
 type PipelineControllerAPI interface {
 	SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error)
@@ -314,11 +323,13 @@ func (s *SpinClient) ExecutePipeline(argsJSON string, stringify bool) (string, *
 
 // TestPipeline - Run a Spinnaker testing
 // Currently returns a not-so-well formatted error.
-// The indended solution is to create a shared API between `shore-cli` & the `backend` to expect well formatted struct for the CLI to render correctly.
+// The intended solution is to create a shared API between `shore-cli` & the `backend` to expect well formatted struct for the CLI to render correctly.
 // TODO: Design a struct to pass data back to `shore-cli` so the UI layer could render the test-results correctly.
 func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange func(), stringify bool) error {
 	s.log.Info("Starting test suite")
+	var err error
 
+	// Validating test parameters
 	if err := s.initializeAPI(); err != nil {
 		return err
 	}
@@ -350,96 +361,121 @@ func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange
 		testsToRun = configuredTestNames
 	}
 
+	// TODO: Rethink the channel size (https://github.com/Autodeskshore/pull/200#discussion_r2847971)
+	var ch = make(chan *TestPipelineResponse, len(testsToRun))
+	var wg = sync.WaitGroup{}
 	testErrors := make(map[string][]string)
 
 	for _, testName := range testsToRun {
-		test := testConfig.Tests[testName]
-		s.log.Info(fmt.Sprintf("Running test %s", testName))
-
-		if test.ExecArgs == nil {
-			test.ExecArgs = make(map[string]interface{})
+		if testConfig.Parallel {
+			// We add 1 to the wait group - each worker will decrease it back
+			wg.Add(1)
+			go func(testName string, test shore_testing.TestConfig, stringify bool) {
+				defer wg.Done()
+				ch <- s.RunTest(testName, testConfig, testErrors, stringify)
+			}(testName, testConfig.Tests[testName], stringify)
+		} else {
+			ch <- s.RunTest(testName, testConfig, testErrors, stringify)
 		}
+	}
 
-		test.ExecArgs["application"] = testConfig.Application
-		test.ExecArgs["pipeline"] = testConfig.Pipeline
+	wg.Wait()
+	close(ch)
 
-		execArgs, err := jsoniter.Marshal(test.ExecArgs)
-
+	for testResponse := range ch {
+		err = s.ValidateTestResponses(*testResponse, testConfig.Timeout, testErrors)
 		if err != nil {
 			return err
 		}
-		s.log.Info("Executing pipeline for test: ", testName)
-		refID, _, err := s.ExecutePipeline(string(execArgs), stringify)
+	}
 
-		if err != nil {
-			s.log.Debug("Pipeline execution failed for test: ", testName)
-			testErrors[testName] = append(testErrors[testName], err.Error())
-		}
+	return nil
+}
 
-		// TODO: Need to check what happens in a 404 case and format an error for it.
-		if len(refID) == 0 {
+func (s *SpinClient) RunTest(testName string, testConfig shore_testing.TestsConfig, testErrors map[string][]string, stringify bool) *TestPipelineResponse {
+
+	s.log.Info(fmt.Sprintf("Running test %s", testName))
+	test := testConfig.Tests[testName]
+	if test.ExecArgs == nil {
+		test.ExecArgs = make(map[string]interface{})
+	}
+
+	test.ExecArgs["application"] = testConfig.Application
+	test.ExecArgs["pipeline"] = testConfig.Pipeline
+
+	execArgs, err := jsoniter.Marshal(test.ExecArgs)
+
+	if err != nil {
+		return &TestPipelineResponse{testName, test, "", nil, nil, err}
+	}
+
+	s.log.Info("Executing pipeline for test: ", testName)
+	refID, res, err := s.ExecutePipeline(string(execArgs), stringify)
+	if err != nil {
+		return &TestPipelineResponse{testName, test, "", nil, nil, err}
+	}
+
+	var execDetails *PipelineExecutionDetailsResponse
+	execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
+	if execDetails.Status == PipelineRunning || execDetails.Status == PipelineNotStarted {
+		s.log.Info("Waiting for pipeline to finish for test: ", testName)
+
+		execDetails, _, err = s.waitForPipelineToFinish(refID, testConfig.Timeout)
+	}
+	if err != nil {
+		testErrors[testName] = append(testErrors[testName], err.Error())
+	}
+	return &TestPipelineResponse{testName, test, refID, res, execDetails, err}
+}
+
+func (s *SpinClient) ValidateTestResponses(testResponse TestPipelineResponse, timeout int, testErrors map[string][]string) error {
+	if testResponse.err != nil {
+		s.log.Debug("Pipeline execution failed for test: ", testResponse.testName)
+		testErrors[testResponse.testName] = append(testErrors[testResponse.testName], testResponse.err.Error())
+	}
+
+	// TODO: Need to check what happens in a 404 case and format an error for it.
+	if len(testResponse.pipelineID) == 0 {
+		return nil
+	}
+
+	for _, stage := range testResponse.ExecutionDetails.Stages {
+		stageName := stage["name"].(string)
+
+		assertion, exists := testResponse.test.Assertions[stageName]
+
+		if !exists {
+			testErrors[testResponse.testName] = append(testErrors[testResponse.testName], fmt.Sprintf("missing assertion for stage %s", stageName))
 			continue
 		}
 
-		var execDetails *PipelineExecutionDetailsResponse
-		s.log.Info("Retrieving pipeline details for test: ", testName)
-		execDetails, _, err = s.CustomSpinCLI.PipelineExecutionDetails(refID, bytes.NewBuffer(make([]byte, 0)))
+		expectedStatus := strings.ToUpper(assertion.ExpectedStatus)
 
-		// Other statuses to consider - PipelinePaused / PipelineSuspended
-		if execDetails.Status == PipelineRunning || execDetails.Status == PipelineNotStarted {
-			s.log.Info("Waiting for pipeline to finish for test: ", testName)
-
-			execDetails, _, err = s.waitForPipelineToFinish(refID, testConfig.Timeout)
-			if err != nil {
-
-				testErrors[testName] = append(testErrors[testName], fmt.Errorf("max timed out reached for test: '%s' with errors: %w", testName, err).Error())
-				continue
-			}
+		if err := isExpectedStatus(expectedStatus, stage["status"].(string), stageName); err != nil {
+			testErrors[testResponse.testName] = append(testErrors[testResponse.testName], err.Error())
 		}
 
-		if err != nil {
-			testErrors[testName] = append(testErrors[testName], err.Error())
-		}
-
-		for _, stage := range execDetails.Stages {
-			stageName := stage["name"].(string)
-
-			assetion, exists := test.Assertions[stageName]
-
-			if !exists {
-				testErrors[testName] = append(testErrors[testName], fmt.Sprintf("missing assertion for stage %s", stageName))
-				continue
-			}
-
-			expectedStatus := strings.ToUpper(assetion.ExpectedStatus)
-
-			if err := isExpectedStatus(expectedStatus, stage["status"].(string), stageName); err != nil {
-				testErrors[testName] = append(testErrors[testName], err.Error())
-			}
-
-			if err := isExpectedOutput(assetion.ExpectedOutput, stage["outputs"].(map[string]interface{}), stageName); err != nil {
-				testErrors[testName] = append(testErrors[testName], err.Error())
-			}
+		if err := isExpectedOutput(assertion.ExpectedOutput, stage["outputs"].(map[string]interface{}), stageName); err != nil {
+			testErrors[testResponse.testName] = append(testErrors[testResponse.testName], err.Error())
 		}
 	}
 
 	// This should really be handled by a Golang template.
 	// TODO: move this logic to the CLI layer.
 	if len(testErrors) > 0 {
-		formmatedErrors := ""
+		formattedErrors := ""
 
 		for testName, testErrors := range testErrors {
-			formmatedErrors += fmt.Sprintf("`%s` failure:\n", testName)
+			formattedErrors += fmt.Sprintf("`%s` failure:\n", testName)
 			for _, testError := range testErrors {
-				formmatedErrors += fmt.Sprintf("%s\n", testError)
+				formattedErrors += fmt.Sprintf("%s\n", testError)
 			}
-			formmatedErrors += "\n"
+			formattedErrors += "\n"
 		}
 
 		// TODO: The backend shouldn't concern itself with rendering, this should be replaced with the correct struct response.
-		return errors.New(formmatedErrors)
+		return errors.New(formattedErrors)
 	}
-
 	return nil
 }
 
@@ -619,7 +655,7 @@ func (s *SpinClient) pollSpinnakerGetPipelineConfigUsingGET(application string, 
 		return foundPipeline["id"].(string), queryResp, nil
 	}
 
-	return "", &http.Response{}, fmt.Errorf("Couldn't get pipeline until hitting timeout")
+	return "", &http.Response{}, fmt.Errorf("couldn't get pipeline until hitting timeout")
 }
 
 // A DFS implementation that runs through the pipeline/stages tree.
