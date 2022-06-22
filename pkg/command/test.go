@@ -21,6 +21,7 @@ Testing implementation should be defined on the `backend` level.
 func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 	var testNames []string
 	var stringifyNonScalars bool
+	var isParallel bool
 
 	cmd := &cobra.Command{
 		Use:   "test-remote",
@@ -51,6 +52,8 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 
 			d.Logger.Debug("Stringify is ", stringifyNonScalars)
 
+			testConfig.Parallel = isParallel
+
 			err = d.Backend.TestPipeline(testConfig, func() {}, stringifyNonScalars)
 
 			if err != nil {
@@ -65,6 +68,7 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 
 	cmd.Flags().StringSliceVarP(&testNames, "test-names", "t", []string{}, "An array of tests that will be ran. Preserves order.")
 	cmd.Flags().BoolVarP(&stringifyNonScalars, "stringify", "y", true, "Stringifies the non scalar parameters to SpinCli")
+	cmd.Flags().BoolVarP(&isParallel, "concurrent", "c", false, "Run tests concurrently")
 
 	return cmd
 }

@@ -6,6 +6,7 @@ type TestsConfig struct {
 	Application string                `json:"application"`
 	Pipeline    string                `json:"pipeline"`
 	Timeout     int                   `json:"timeout"`
+	Parallel    bool                  `json:"parallel"`
 	Tests       map[string]TestConfig `json:"tests"`
 	Ordering    []string              `json:"ordering"`
 }

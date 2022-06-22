@@ -12,6 +12,7 @@ import (
 )
 
 func TestSuccessfulRemoteTestWithConfigFileNoArgs(t *testing.T) {
+
 	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
 		// Given
 		e2eConfig := `
@@ -84,6 +85,53 @@ func TestSuccessfulRemoteTestWithConfigFileWithArgs(t *testing.T) {
 		// Test
 		testRemoteCmd := command.NewTestRemoteCommand(deps)
 		testRemoteCmd.Flags().Set("test-names", "\"Test Success 1\",\"Test Success 2\"")
+		testRemoteCmd.Flags().Set("stringify", "true")
+		err := testRemoteCmd.Execute()
+
+		// Assert
+		assert.Nil(t, err)
+	})
+}
+
+func TestSuccessfulRemoteTestsConcurrent(t *testing.T) {
+
+	SetupTest(t, func(t *testing.T, deps *command.Dependencies) {
+		// Given
+		e2eConfig := `
+		{
+			"application": "cosv3-state-buckets",
+			"pipeline": "cosv3-dynamodb-table",
+			"tests": {
+				"Test Success 1": {
+					"assertions": {
+						"testedname": {
+							"expected_output": {
+								"test": "123"
+							},
+							"expected_status": "succeeded"
+						}
+					}
+				},
+				"Test Success 2": {
+					"assertions": {
+						"testedname": {
+							"expected_output": {
+								"test": "123"
+							},
+							"expected_status": "succeeded"
+						}
+					}
+				}
+			}
+		}
+		`
+
+		afero.WriteFile(deps.Project.FS, path.Join(testPath, "E2E.json"), []byte(e2eConfig), os.ModePerm)
+
+		// Test
+		testRemoteCmd := command.NewTestRemoteCommand(deps)
+		testRemoteCmd.Flags().Set("test-names", "\"Test Success 1\",\"Test Success 2\"")
+		testRemoteCmd.Flags().Set("concurrent", "true")
 		testRemoteCmd.Flags().Set("stringify", "true")
 		err := testRemoteCmd.Execute()
 
