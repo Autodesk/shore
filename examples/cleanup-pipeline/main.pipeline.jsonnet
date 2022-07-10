@@ -7,7 +7,7 @@ local parameter = import 'spin-lib-jsonnet/parameter.libsonnet';
 function(params) (
   pipeline.Pipeline {
     application: params.application,
-    name: params.pipeline_name,
+    name: params.pipeline,
     parameterConfig: [
       parameter.Parameter {
         name: 'kube-deployment',

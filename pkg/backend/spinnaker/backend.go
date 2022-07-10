@@ -67,6 +67,25 @@ type SpinClient struct {
 	log logrus.FieldLogger
 }
 
+func (s *SpinClient) GetPipeline(application string, pipelineName string) (map[string]interface{}, *http.Response, error) {
+	var outErr error
+
+	err := s.initializeAPI()
+	if err != nil {
+		outErr = err
+		return nil, nil, outErr
+	}
+
+	pipeline, res, err := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+
+	if err != nil {
+		outErr = err
+		return nil, nil, outErr
+	}
+
+	return pipeline, res, err
+}
+
 // NewClient - Create a new default spinnaker client
 func NewClient(logger logrus.FieldLogger) *SpinClient {
 	return &SpinClient{log: logger}

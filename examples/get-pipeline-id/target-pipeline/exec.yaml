@@ -3,7 +3,7 @@
 
 # Here we have an Object that conforms to the Spinnaker API `ExecutePipeline` schema.
 application: test1test2test3
-pipeline_name: get-pipeline-id-main-pipeline
+pipeline: get-pipeline-id-main-pipeline
 
 parameters:
   testMap:

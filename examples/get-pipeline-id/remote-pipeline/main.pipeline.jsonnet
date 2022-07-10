@@ -8,7 +8,7 @@ function(params) (
   pipeline.Pipeline {
     limitConcurrent: false,
     application: params.application,
-    name: params.pipeline_name,
+    name: params.pipeline,
     Stages:: [
       stage.FindArtifactFromExecutionStage {
         name: 'Get Artifact',

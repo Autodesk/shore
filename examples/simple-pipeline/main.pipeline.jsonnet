@@ -7,7 +7,7 @@ function(params) (
   pipeline.Pipeline {
     limitConcurrent: false,
     application: params.application,
-    name: params.pipeline_name,
+    name: params.pipeline,
     Stages:: [
       stage.WaitStage {
         name: 'Stage 1',
@@ -35,9 +35,9 @@ function(params) (
         consumeArtifactSource: "propertyFile",
         account: 'kubernetes',
         credentials: 'kubernetes',
-        propertyFile: "test123",
+        propertyFile: "test123asdad",
         manifest: kube.Manifest {
-          generateName:: 'test123',
+          generateName:: 'test234123',
           containers:: [
             kube.Container {
               command: ['sh', '-c', 'echo SPINNAKER_PROPERTY_TEST=TEST && echo SPINNAKER_PROPERTY_OUTPUT=OUTPUT && echo SPINNAKER_PROPERTY_SOMETHING=SOMETHING'],

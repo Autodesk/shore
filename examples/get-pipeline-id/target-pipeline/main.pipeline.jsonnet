@@ -7,7 +7,7 @@ function(params) (
   pipeline.Pipeline {
     limitConcurrent: false,
     application: params.application,
-    name: params.pipeline_name,
+    name: params.pipeline,
     Stages:: [
       evaluateArtifacts.EvaluateArtifactStage {
         name: "eval!",

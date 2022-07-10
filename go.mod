@@ -11,6 +11,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/jsonnet-bundler/jsonnet-bundler v0.4.0
 	github.com/manifoldco/promptui v0.9.0
+	github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.8.2
 	github.com/spf13/cobra v1.4.0
