@@ -8,7 +8,7 @@ function(params) (
   pipeline.Pipeline {
     limitConcurrent: false,
     application: params.application,
-    name: params.pipeline_name,
+    name: params.pipeline,
     Stages:: [
       stage.Parallel {
         parallelStages: [
@@ -51,7 +51,7 @@ function(params) (
         Parent: $,
         Pipeline: pipeline.Pipeline {
           application: $.application,
-          name: '%s-nested' % params.pipeline_name,
+          name: '%s-nested' % params.pipeline,
           Stages:: [
             stage.WaitStage {
               name: 'Stage 1',

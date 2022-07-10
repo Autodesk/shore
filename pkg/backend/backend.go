@@ -15,4 +15,5 @@ type Backend interface {
 	WaitForPipelineToFinish(id string, timeout int) (string, *http.Response, error)
 	// TODO: Reconsider `onChange`, it may be a channel to communicate data between `shore-cli` & the Testing process in an async fashion.
 	TestPipeline(testConfig shore_testing.TestsConfig, onChange func(), stringify bool) error
+	GetPipeline(application string, pipelineName string) (map[string]interface{}, *http.Response, error)
 }

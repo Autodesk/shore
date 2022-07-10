@@ -53,6 +53,7 @@ func init() {
 
 	rootCmd.AddCommand(command.NewProjectCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewRenderCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewDiffCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewSaveCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewExecCommand(commonDependencies, "exec"))
 	rootCmd.AddCommand(command.NewTestRemoteCommand(commonDependencies))

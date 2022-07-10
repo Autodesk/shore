@@ -13,10 +13,13 @@ setup:
 test:
 	go test ./... -race -cover -v -covermode=atomic -coverprofile=coverage_atomic.out
 
-build: build-osx build-linux build-win
+build: build-osx-amd build-osx-arm build-linux build-win
 
-build-osx:
+build-osx-amd:
 	GOOS=darwin GOARCH=amd64 $(BUILD_CMD)
+
+build-osx-arm:
+	GOOS=darwin GOARCH=arm64 $(BUILD_CMD)
 
 build-linux:
 	GOOS=linux GOARCH=amd64 $(BUILD_CMD)
