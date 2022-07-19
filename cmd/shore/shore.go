@@ -29,10 +29,16 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Version:       version,
-	PersistentPreRun: func(*cobra.Command, []string) {
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		logLevel := logrus.WarnLevel + logrus.Level(logVerbosity)
 		logger.SetLevel(logLevel)
 		logger.SetFormatter(&logrus.TextFormatter{})
+
+		profileName := command.GetProfileName(cmd)
+		ExecConfigName := command.GetExecutorConfigName(cmd)
+
+		logger.Debug("Profile set to - ", profileName)
+		logger.Debug("Executor configuration set to - ", ExecConfigName)
 	},
 }
 
@@ -50,6 +56,12 @@ func init() {
 	}
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")
+	// "default" should not be set explicitly on the command - it will be set in getConfigName.
+	rootCmd.PersistentFlags().StringP("executor-config", "X", os.Getenv("SHORE_EXECUTOR_CONFIG"),
+		"The backend configuration name to use. Can also be set by $SHORE_EXECUTOR_CONFIG environment variable. Priority is: env variable, cli args, default.")
+	//'p' is used for 'payload' used by exec command. 'l' for load profile?
+	rootCmd.PersistentFlags().StringP("profile", "P", os.Getenv("SHORE_PROFILE"),
+		"The profile to use. Can also be set by $SHORE_PROFILE environment variable. Priority is: env variable, cli args, default.")
 
 	rootCmd.AddCommand(command.NewProjectCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewRenderCommand(commonDependencies))
