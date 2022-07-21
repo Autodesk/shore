@@ -12,7 +12,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -128,12 +127,15 @@ func (s *SpinClient) initializeAPI() error {
 
 func (s *SpinClient) getOtherPipelineId(application string, pipelineName string) (string, *http.Response, error) {
 	pipeline, res, err := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
-
-	if !mapContainsKey(pipeline, "id") {
-		return "", res, err
+	if err != nil {
+		return "", res, NewApplicationControllerError(err, res)
 	}
 
-	return pipeline["id"].(string), res, err
+	if !mapContainsKey(pipeline, "id") {
+		return "", res, nil
+	}
+
+	return pipeline["id"].(string), res, nil
 }
 
 func mapContainsKey(mapInput map[string]interface{}, searchString string) bool {
@@ -227,27 +229,30 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 		pipeline["type"] = "templatedPipeline"
 	}
 
-	foundPipeline, queryResp, _ := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
-	if queryResp.StatusCode == http.StatusOK {
-		// pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
-		if len(foundPipeline) > 0 {
-			s.log.Info("Pipeline ", foundPipeline["name"], " found with id ", foundPipeline["id"], " in application ", application)
-
-			pipeline["id"] = foundPipeline["id"].(string)
-			pipelineID = foundPipeline["id"].(string)
+	foundPipeline, queryResp, err := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+	if err != nil {
+		wrappedErr := NewApplicationControllerError(err, queryResp)
+		if wrappedErr.StatusCode() != http.StatusNotFound {
+			return pipelineID, nil, wrappedErr
 		}
 
-	} else if queryResp.StatusCode == http.StatusNotFound {
-		// pipeline doesn't exists, let's create a new one
-		s.log.Info("Pipeline ", pipelineName, " not found in application ", application)
-	} else {
-		b, _ := ioutil.ReadAll(queryResp.Body)
-		return pipelineID, nil, fmt.Errorf("unhandled response %d: %s", queryResp.StatusCode, b)
+		s.log.Info("Pipeline %q not found in application %q", pipelineName, application)
 	}
-	opt := &spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts{}
-	res, err := s.PipelineControllerAPI.SavePipelineUsingPOST(s.Context, pipeline, opt)
 
-	return pipelineID, res, err
+	// pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
+	if len(foundPipeline) > 0 {
+		s.log.Info("Pipeline %q found with ID %q", foundPipeline["name"], foundPipeline["id"], application)
+
+		pipeline["id"] = foundPipeline["id"].(string)
+		pipelineID = foundPipeline["id"].(string)
+	}
+
+	res, err := s.PipelineControllerAPI.SavePipelineUsingPOST(s.Context, pipeline, nil)
+	if err != nil {
+		return pipelineID, res, NewApplicationControllerError(err, res)
+	}
+
+	return pipelineID, res, nil
 }
 
 // ExecutePipeline - Execute a spinnaker pipeline.
@@ -650,17 +655,13 @@ func (s *SpinClient) pollSpinnakerGetPipelineConfigUsingGET(application string, 
 	var pollingTimeout int = 61
 
 	for pollingSleep := 1; pollingSleep <= pollingTimeout; pollingSleep += pollingStep {
-		foundPipeline, queryResp, _ := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
-		defer queryResp.Body.Close()
-
-		if queryResp.StatusCode != http.StatusOK {
-			b, _ := ioutil.ReadAll(queryResp.Body)
-			err := fmt.Errorf("response %d: %s. nested pipeline '%s' wasn't created in application '%s', pipeline Stage will be unbound",
-				queryResp.StatusCode,
-				b,
+		foundPipeline, queryResp, err := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+		if err != nil || queryResp.StatusCode != http.StatusOK {
+			return "", queryResp, fmt.Errorf(
+				"nested pipeline %q wasn't created in application %q, pipeline Stage will be unbound: %w",
 				pipelineName,
-				application)
-			return "", queryResp, err
+				application,
+				NewApplicationControllerError(err, queryResp))
 		}
 
 		if len(foundPipeline) == 0 {
