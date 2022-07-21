@@ -35,7 +35,7 @@ func NewSaveCommand(d *Dependencies) *cobra.Command {
 			res, err := d.Backend.SavePipeline(pipeline)
 
 			if err != nil {
-				d.Logger.Warn("Save pipeline returned an error", err)
+				d.Logger.Warnf("Save pipeline returned an error: %v", err)
 				return err
 			}
 
