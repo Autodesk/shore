@@ -5,6 +5,7 @@ import (
 
 	// Feels a bit weird, maybe move the TestsConfig object out?
 
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/Autodeskshore/pkg/shore_testing"
 
 	jsoniter "github.com/json-iterator/go"
@@ -28,7 +29,7 @@ func NewTestRemoteCommand(d *Dependencies) *cobra.Command {
 		Short: "Run the test suite on a remotely saved pipeline",
 		Long:  "Using the E2E.yaml file run a full test-suite on the pipeline stored in a specific backend",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			testSettingsBytes, err := GetConfigFileOrFlag(d.Project, "E2E", "")
+			testSettingsBytes, err := config.LoadConfig(d.Project, "", "E2E")
 
 			if err != nil {
 				return err

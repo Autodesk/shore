@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Autodeskshore/pkg/command"
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ func NewSaveCommand(d *command.Dependencies) *cobra.Command {
 Help in developing and debugging cleanup pipelines in a live environment.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, _ := command.GetConfigFileOrFlag(d.Project, "cleanup/render", renderValues)
+			settingsBytes, _ := config.LoadConfig(d.Project, renderValues, "cleanup/render")
 
 			pipeline, err := command.Render(d, settingsBytes, renderer.CleanUpFileName)
 

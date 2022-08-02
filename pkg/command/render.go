@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
 )
@@ -20,9 +21,9 @@ func NewRenderCommand(d *Dependencies) *cobra.Command {
 Automatically reads libraries from "vendor/". The Jsonnet-Bundler default path for libraries`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			settingsBytes, err := GetConfigFileOrFlag(d.Project, "render", renderValues)
+			settingsBytes, err := config.LoadConfig(d.Project, renderValues, "render")
 
-			var confErr *DefaultConfErr
+			var confErr *config.FileConfErr
 
 			if err != nil && !errors.As(errors.Unwrap(err), &confErr) {
 				return err

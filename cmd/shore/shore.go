@@ -34,12 +34,37 @@ var rootCmd = &cobra.Command{
 		logger.SetLevel(logLevel)
 		logger.SetFormatter(&logrus.TextFormatter{})
 
-		profileName := command.GetProfileName(cmd)
-		ExecConfigName := command.GetExecutorConfigName(cmd)
+		profileName := GetProfileName(cmd)
+		ExecConfigName := GetExecutorConfigName(cmd)
 
 		logger.Debug("Profile set to - ", profileName)
 		logger.Debug("Executor configuration set to - ", ExecConfigName)
 	},
+}
+
+// GetProfileName - Gets the Profile name based on the env var or flag.
+func GetProfileName(cmd *cobra.Command) string {
+	return getConfigName(cmd, "profile", "SHORE_PROFILE")
+}
+
+// GetExecutorConfigName - Gets the Backend config name based on the env var or flag.
+func GetExecutorConfigName(cmd *cobra.Command) string {
+	return getConfigName(cmd, "executor-config", "SHORE_EXECUTOR_CONFIG")
+}
+
+func getConfigName(cmd *cobra.Command, flagName string, envVar string) string {
+	configName := "default"
+	flagValue, err := cmd.Flags().GetString(flagName)
+	envValue := os.Getenv(envVar) // Either a non-empty string, or an empty string
+
+	if len(envValue) > 0 {
+		configName = envValue
+	}
+	if len(flagValue) > 0 && err == nil {
+		configName = flagValue
+	}
+
+	return configName
 }
 
 func init() {

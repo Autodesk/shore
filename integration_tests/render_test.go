@@ -76,7 +76,6 @@ func TestSuccessRenderCommandLineRenderParams(t *testing.T) {
 			}
 		)
 		`
-		command.GetConfigFileOrFlag(deps.Project, "render", "values")
 		afero.WriteFile(deps.Project.FS, path.Join(testPath, "main.pipeline.jsonnet"), []byte(pipeline), os.ModePerm)
 
 		// Test
