@@ -3,7 +3,6 @@ package jsonnet
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/google/go-jsonnet"
@@ -48,13 +47,6 @@ func NewRenderer(fs afero.Fs, logger logrus.FieldLogger) *Jsonnet {
 func (j *Jsonnet) Render(projectPath string, renderArgs string, renderType renderer.RenderType) (string, error) {
 	renderFile := filepath.Join(projectPath, RenderFiles[renderType])
 
-	// TODO implement lazy loading
-	codeBytes, err := afero.ReadFile(j.fs, renderFile)
-
-	if err != nil {
-		return "", err
-	}
-
 	jbFile, err := j.loadJsonnetBundlerFile(projectPath)
 
 	// If the file doesn't exist, we can skip the error.
@@ -62,17 +54,11 @@ func (j *Jsonnet) Render(projectPath string, renderArgs string, renderType rende
 		return "", err
 	}
 
-	j.fileImporter, err = GetFileImporter(projectPath, jbFile)
-
-	if err != nil {
-		return "", err
-	}
-
 	// Always include params, even if they are empty
 	j.vm.TLACode("params", renderArgs)
-	j.vm.Importer(j.fileImporter)
-	// Currently adds the local `sponnet instance` to be available from `sponnet/*.libsonnet`
-	return j.vm.EvaluateSnippet(renderFile, string(codeBytes))
+	j.vm.Importer(NewImporter(j.fs, projectPath, jbFile))
+
+	return j.vm.EvaluateFile(renderFile)
 }
 
 // A compliant wrapper implementing jsonnetfile.Load but using `Afero` instrad of `ioutil`.
@@ -84,39 +70,4 @@ func (j *Jsonnet) loadJsonnetBundlerFile(path string) (jbV1.JsonnetFile, error) 
 	}
 
 	return jsonnetfile.Unmarshal(bytes)
-}
-
-// GetFileImporter - Get the Jsonnet File Import customized to the Jsonnet Bundler type.
-func GetFileImporter(projectPath string, jbFile jbV1.JsonnetFile) (*jsonnet.FileImporter, error) {
-	libsPath := []string{}
-	fileImporter := jsonnet.FileImporter{}
-
-	if jbFile.LegacyImports {
-		// Jsonnet-Bundler LegacyImports put the imported folders in the top directory with symlinks.
-		libPath := filepath.Join(projectPath, ShareLibsPath)
-		libsPath = append(libsPath, libPath)
-	} else {
-		// Jsonnet-Bundler Imports put complies to the GoMod style of artifact management (vendoring)
-		// This means we need to take an extra step to find the top level key for each shared folder.
-		libsMap := make(map[string][]string)
-
-		for k := range jbFile.Dependencies {
-			libPath := filepath.Join(projectPath, ShareLibsPath, k)
-			libPathSplit := strings.Split(libPath, "/")
-			libsKey := strings.Join(libPathSplit[:len(libPathSplit)-1], "/")
-
-			if len(libsMap[libsKey]) > 0 {
-				libsMap[libsKey] = append(libsMap[libsKey], k)
-			} else {
-				libsMap[libsKey] = []string{k}
-			}
-		}
-
-		for k := range libsMap {
-			libsPath = append(libsPath, k)
-		}
-	}
-
-	fileImporter.JPaths = append(fileImporter.JPaths, libsPath...)
-	return &fileImporter, nil
 }
