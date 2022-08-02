@@ -88,17 +88,16 @@ func TestFileImporterSuccess(t *testing.T) {
 	spec, _ := jsonnetfile.Unmarshal([]byte(jbFile))
 
 	// Test
-	importer, err := jsonnet.GetFileImporter(testPath, spec)
+	importer := jsonnet.NewImporter(&afero.MemMapFs{}, testPath, spec)
 
 	// Assert
 	basePath := filepath.Join(testPath, jsonnet.ShareLibsPath, "github.com")
 
-	value := []string{filepath.Join(basePath, "org-1"), filepath.Join(basePath, "org-2")}
+	value := []string{testPath, filepath.Join(basePath, "org-1"), filepath.Join(basePath, "org-2")}
 	sort.Strings(value)
 	sort.Strings(importer.JPaths)
 
-	assert.Len(t, importer.JPaths, 2)
-	assert.Nil(t, err)
+	assert.Len(t, importer.JPaths, 3)
 	assert.Equal(t, value, importer.JPaths)
 }
 
@@ -133,11 +132,10 @@ func TestFileImporterLegacySuccess(t *testing.T) {
 	spec, _ := jsonnetfile.Unmarshal([]byte(jbFile))
 
 	// Test
-	importer, err := jsonnet.GetFileImporter(testPath, spec)
+	importer := jsonnet.NewImporter(&afero.MemMapFs{}, testPath, spec)
 
 	// Assert
-	value := []string{filepath.Join(testPath, jsonnet.ShareLibsPath)}
-	assert.Len(t, importer.JPaths, 1)
-	assert.Nil(t, err)
+	value := []string{testPath, filepath.Join(testPath, jsonnet.ShareLibsPath)}
+	assert.Len(t, importer.JPaths, 2)
 	assert.Equal(t, value, importer.JPaths)
 }
