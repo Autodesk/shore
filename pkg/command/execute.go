@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ func NewExecCommand(d *Dependencies, configPath string) *cobra.Command {
 		Short: "Executes the pipeline",
 		Long:  "Executes the selected pipeline",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := GetConfigFileOrFlag(d.Project, configPath, withPayload)
+			settingsBytes, err := config.LoadConfig(d.Project, withPayload, configPath)
 
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				return err

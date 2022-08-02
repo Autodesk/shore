@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Autodeskshore/pkg/command"
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
 )
@@ -21,9 +22,9 @@ func NewRenderCommand(d *command.Dependencies) *cobra.Command {
 This helper utility command is used to debug issues when the "cleanup" pipeline doesn't render correctly.`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := command.GetConfigFileOrFlag(d.Project, "cleanup/render", values)
+			settingsBytes, err := config.LoadConfig(d.Project, values, "cleanup/render")
 
-			var confErr *command.DefaultConfErr
+			var confErr *config.FileConfErr
 
 			if err != nil && !errors.As(errors.Unwrap(err), &confErr) {
 				return err

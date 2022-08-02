@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Autodeskshore/pkg/command"
 	"github.com/Autodeskshore/pkg/project"
 
 	jsoniter "github.com/json-iterator/go"
@@ -26,6 +25,15 @@ type ShoreConfig struct {
 type ProfileMetaData struct {
 	Application string
 	Pipeline    string
+}
+
+// ConfigurationErr is thrown when a general configuration error happens.
+type ConfigurationErr struct {
+	Err error
+}
+
+func (c *ConfigurationErr) Error() string {
+	return c.Err.Error()
 }
 
 func findIndividualLocalConfig(p *project.Project, configName string) (string, error) {
@@ -69,7 +77,7 @@ func writeShoreConfig(p *project.Project, shoreConfig ShoreConfig) error {
 func LoadShoreConfig(p *project.Project) (ShoreConfig, error) {
 	var shoreConfig ShoreConfig
 
-	configData, err := command.GetConfigFileOrFlag(p, "shore", "")
+	configData, err := LoadConfig(p, "", "shore")
 
 	if err == nil {
 		if err := jsoniter.Unmarshal(configData, &shoreConfig); err != nil {
@@ -148,4 +156,22 @@ func LoadShoreConfig(p *project.Project) (ShoreConfig, error) {
 
 	// Error out on anything other than missing file.
 	return ShoreConfig{}, err
+}
+
+// LoadConfig - loads a specific shore config such as render.yml or exec.yml. Tries from flag first, then from filesystem.
+func LoadConfig(p *project.Project, flag string, fileName string) ([]byte, error) {
+
+	if flag != "" {
+		configData, err := GetFlagConfig(p, flag)
+		if err != nil {
+			return nil, err
+		}
+		return configData, nil
+	}
+
+	configData, err := GetFileConfig(p, fileName)
+	if err != nil {
+		return nil, err
+	}
+	return configData, nil
 }

@@ -6,7 +6,9 @@ import (
 	"reflect"
 
 	"github.com/fatih/color"
+	jsoniter "github.com/json-iterator/go"
 
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/nsf/jsondiff"
 	"github.com/spf13/cobra"
@@ -24,9 +26,9 @@ func NewDiffCommand(d *Dependencies) *cobra.Command {
 		Long:  `Shows difference between current and desired state of the pipeline.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			settingsBytes, err := GetConfigFileOrFlag(d.Project, "render", renderValues)
+			settingsBytes, err := config.LoadConfig(d.Project, "render", renderValues)
 
-			var confErr *DefaultConfErr
+			var confErr *config.ConfigurationErr
 
 			if err != nil && !errors.As(errors.Unwrap(err), &confErr) {
 				return err
@@ -72,6 +74,7 @@ func Diff(d *Dependencies, settings []byte, skipMatches string, renderType rende
 	IDToPipelineMap := make(map[string]interface{})
 	fillPipelineMap(d, IDToPipelineMap, desiredPipelineInterface)
 
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	args := make(map[string]interface{})
 	err = json.UnmarshalFromString(renderArgs, &args)
 
@@ -175,6 +178,7 @@ func getDesiredPipeline(d *Dependencies, projectPath string, renderArgs string, 
 	}
 
 	var desiredPipelineInterface map[string]interface{}
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	err = json.UnmarshalFromString(desiredPipelineString, &desiredPipelineInterface)
 
 	if err != nil {
@@ -200,6 +204,7 @@ func getCurrentPipeline(d *Dependencies, args map[string]interface{},
 
 	formatCurrentPipeline(d, IDToPipelineMap, currentPipelineInterface)
 
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	currentPipelineString, err := json.Marshal(currentPipelineInterface)
 
 	if err != nil {

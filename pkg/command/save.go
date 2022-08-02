@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Autodeskshore/pkg/config"
 	"github.com/Autodeskshore/pkg/renderer"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +20,7 @@ func NewSaveCommand(d *Dependencies) *cobra.Command {
 		Short: "Save the pipeline",
 		Long:  "Using the main file configured by the renderer save the pipeline (or pipelines)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			settingsBytes, err := GetConfigFileOrFlag(d.Project, "render", renderVals)
+			settingsBytes, err := config.LoadConfig(d.Project, renderVals, "render")
 
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				return err
