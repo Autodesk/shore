@@ -149,11 +149,12 @@ func (s *SpinClient) findAndReplacePipelineNameWithFoundID(spinnakerObject map[s
 	pipelineName := spinnakerObject["pipeline"].(string)
 
 	isPipelineUUID, err := isValidv4UUIDtypeRFC4122(pipelineName)
-	if !isPipelineUUID {
+	isPipelineSpEL := isSpEL(pipelineName)
+	if !(isPipelineUUID || isPipelineSpEL) {
 		s.log.WithFields(logrus.Fields{
 			"pipeline_name": pipelineName,
 			"uuid_error":    err,
-		}).Info("Checking if provided pipeline name is not already a valid pipeline UUID, looking for existing pipeline.")
+		}).Info("Checking if provided pipeline name is not already a valid pipeline UUID or SpEL expression, looking for existing pipeline.")
 
 		newID, res, err := s.getOtherPipelineId(pipelineApp, pipelineName)
 		newSpinnakerObject := spinnakerObject
@@ -180,7 +181,7 @@ func (s *SpinClient) findAndReplacePipelineNameWithFoundID(spinnakerObject map[s
 		s.log.WithFields(logrus.Fields{
 			"pipeline_name": pipelineName,
 			"application":   pipelineApp,
-		}).Info("Provided pipeline name is already a valid pipeline UUID")
+		}).Info("Provided pipeline name is already a valid pipeline UUID or a SpEL expression")
 	}
 
 	return false, spinnakerObject
@@ -198,6 +199,10 @@ func isValidv4UUIDtypeRFC4122(u string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func isSpEL(u string) bool {
+	return strings.Contains(u, "${")
 }
 
 // TODO: We have to implement transaction based saving everywhere - at the moment if something goes off the state is undefined.

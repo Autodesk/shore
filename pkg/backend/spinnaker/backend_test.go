@@ -52,6 +52,21 @@ func TestInvalidLengthv4UUIDOfVariantRFC1422(t *testing.T) {
 	assert.EqualError(t, err, "invalid UUID length: 4")
 }
 
+func TestIsSpEL(t *testing.T) {
+  err := isSpEL("${ami_application}")
+  assert.True(t,err)
+}
+
+func TestPipelineNameIsntSpEL(t *testing.T) {
+  err := isSpEL("pipeline_name")
+  assert.False(t,err)
+}
+
+func TestValidv4UUIDOfVariantRFC1422isNotSpEL(t *testing.T) {
+	err := isSpEL("642355a8-eded-4a73-9d49-2a7af7395f4a")
+	assert.False(t, err)
+}
+
 func TestInvalidFindAndReplacePipelineNameWithFoundID(t *testing.T) {
 	stageMap := []map[string]interface{}{
 		{
@@ -80,6 +95,24 @@ func TestValidFindAndReplacePipelineNameWithFoundIDInStage(t *testing.T) {
 		{
 			"application": "test-source-app",
 			"pipeline":    "642355a8-eded-4a73-9d49-2a7af7395f4a",
+		},
+	}
+
+	_, res := cli.findAndReplacePipelineNameWithFoundID(stageMap[0])
+	assert.Equal(t, expectedResult[0], res)
+}
+
+func TestValidFindAndReplacePipelineNameWithSpelInStage(t *testing.T) {
+	stageMap := []map[string]interface{}{
+		{
+			"application": "test-source-app",
+			"pipeline":    "${parameters.pipeline_name}",
+		},
+	}
+	expectedResult := []map[string]interface{}{
+		{
+			"application": "test-source-app",
+			"pipeline":    "${parameters.pipeline_name}",
 		},
 	}
 
