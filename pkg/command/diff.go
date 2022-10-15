@@ -8,8 +8,8 @@ import (
 	"github.com/fatih/color"
 	jsoniter "github.com/json-iterator/go"
 
-	"github.com/Autodeskshore/pkg/config"
-	"github.com/Autodeskshore/pkg/renderer"
+	"github.com/Autodesk/shore/pkg/config"
+	"github.com/Autodesk/shore/pkg/renderer"
 	"github.com/nsf/jsondiff"
 	"github.com/spf13/cobra"
 )
@@ -89,7 +89,8 @@ func Diff(d *Dependencies, settings []byte, skipMatches string, renderType rende
 	return nil
 }
 
-/*fillPipelineMap Populate the IDToPipelineMap (map[id] -> current pipeline configuration)
+/*
+fillPipelineMap Populate the IDToPipelineMap (map[id] -> current pipeline configuration)
 This function is needed to swap the content of nested pipelines gathered from spinnaker API
 from Ids of to their full objects or names respectively to the kind NestedPipelineStage vs PipelineStage.
 */

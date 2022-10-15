@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Autodeskshore/pkg/config"
+	"github.com/Autodesk/shore/pkg/config"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

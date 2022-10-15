@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodesk/shore/pkg/project"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/afero"

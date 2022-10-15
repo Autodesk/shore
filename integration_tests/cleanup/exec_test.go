@@ -5,9 +5,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Autodeskshore/integration_tests"
-	"github.com/Autodeskshore/pkg/cleanup_command"
-	"github.com/Autodeskshore/pkg/command"
+	"github.com/Autodesk/shore/integration_tests"
+	"github.com/Autodesk/shore/pkg/cleanup_command"
+	"github.com/Autodesk/shore/pkg/command"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

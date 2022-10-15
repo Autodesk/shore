@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 
-	main "github.com/Autodeskshore/cmd/shore"
+	main "github.com/Autodesk/shore/cmd/shore"
 )
 
 func TestGetProfileName(t *testing.T) {

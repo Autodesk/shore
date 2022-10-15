@@ -3,7 +3,7 @@ package project_test
 import (
 	"testing"
 
-	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodesk/shore/pkg/project"
 	log "github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
@@ -80,7 +80,7 @@ func TestIsValidGoVersionReallyBrokenVersion(t *testing.T) {
 func TestInitSuccess(t *testing.T) {
 	// Given
 	localFs := afero.NewMemMapFs()
-	libs := []string{"https://github.com/Autodeskspin-lib-jsonnet.git", "https://github.com/Autodeskadsk-lib-jsonnet.git"}
+	libs := []string{"https://github.com/Autodesk/shore.git"}
 
 	init := project.NewShoreProjectInit("my-project", "jsonnet", "spinnaker", libs)
 

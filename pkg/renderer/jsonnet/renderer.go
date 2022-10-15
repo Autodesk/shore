@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Autodeskshore/pkg/renderer"
+	"github.com/Autodesk/shore/pkg/renderer"
 	"github.com/google/go-jsonnet"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	jbV1 "github.com/jsonnet-bundler/jsonnet-bundler/spec/v1"

@@ -42,7 +42,7 @@ For more infromation please see [`shore-cli`](./docs/internal/architecture/shore
 ## Renderers
 
 1. [Jsonnet Renderer](./docs/internal/architecture/renderers/jsonnet.md) - A `Shore Renderer` reference implementation that uses `Jsonnet`
-NOTE: If you'd like to "bring your own" pipeline and leverage Shore's testing, saving, and executing capabilities, please follow the [bring your own pipeline tutorial](https://github.com/Autodeskshore-tutorials/tree/master/tutorials/bring-your-own-pipeline). 
+NOTE: If you'd like to "bring your own" pipeline and leverage Shore's testing, saving, and executing capabilities, please follow the [bring your own pipeline tutorial](https://github.com/Autodesk/shore-tutorials/tree/master/tutorials/bring-your-own-pipeline).
 ## Backends
 
 1. [Spinnaker Backend](./docs/internal/architecture/backends/spinnaker.md) - A `Shore Backend` reference implementation that integrates with `Spinnaker`

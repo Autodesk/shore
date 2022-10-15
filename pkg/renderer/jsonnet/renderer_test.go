@@ -7,8 +7,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/renderer"
-	"github.com/Autodeskshore/pkg/renderer/jsonnet"
+	"github.com/Autodesk/shore/pkg/renderer"
+	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/jsonnet-bundler/jsonnet-bundler/pkg/jsonnetfile"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -110,7 +110,7 @@ func TestFileImporterLegacySuccess(t *testing.T) {
 	{
 		"source": {
 		"git": {
-			"remote": "https://github.com/Autodesksharedlib1.git",
+			"remote": "https://github.com/example/sharedlib1.git",
 			"subdir": ""
 		}
 		},
@@ -119,7 +119,7 @@ func TestFileImporterLegacySuccess(t *testing.T) {
 	{
 		"source": {
 		"git": {
-			"remote": "https://github.com/AutodesksharedLibPath1.git",
+			"remote": "https://github.com/example/sharedLibPath1.git",
 			"subdir": ""
 		}
 		},
