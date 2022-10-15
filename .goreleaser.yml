@@ -16,6 +16,7 @@ builds:
     ignore:
       - goos: windows
         goarch: arm64
+
 archives:
   - replacements:
       darwin: Darwin
@@ -29,16 +30,6 @@ checksum:
 
 snapshot:
   name_template: "{{ .Tag }}-next"
-
-artifactories:
-  - name: production
-    mode: archive
-    target: 'https://***REMOVED***/***REMOVED***/team-shore-generic/{{ .ProjectName }}/{{ .Version }}/{{ .Os }}/{{ .Arch }}{{ if .Arm }}{{ .Arm }}{{ end }}'
-
-dockers:
-  - image_templates:
-    - "***REMOVED***/shore/{{ .ProjectName }}:latest"
-    - "***REMOVED***/shore/{{ .ProjectName }}:{{ .Tag }}"
 
 changelog:
   sort: asc
