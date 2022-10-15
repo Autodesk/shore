@@ -4,7 +4,7 @@
 
 The "Simple Pipeline" - `Shore Project` example is intended for demonstration and testing purposes.
 
-For installation instructions and `shore` specific concepts, please consult the [`shore tutorials`](https://github.com/Autodeskshore-tutorials)
+For installation instructions and `shore` specific concepts, please consult the [`shore tutorials`](https://github.com/Autodesk/shore-tutorials)
 
 ## Features Demonstrated (and tested)
 

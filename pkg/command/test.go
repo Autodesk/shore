@@ -5,8 +5,8 @@ import (
 
 	// Feels a bit weird, maybe move the TestsConfig object out?
 
-	"github.com/Autodeskshore/pkg/config"
-	"github.com/Autodeskshore/pkg/shore_testing"
+	"github.com/Autodesk/shore/pkg/config"
+	"github.com/Autodesk/shore/pkg/shore_testing"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"

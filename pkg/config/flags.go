@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodesk/shore/pkg/project"
 	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
 )

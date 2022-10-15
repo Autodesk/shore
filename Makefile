@@ -4,8 +4,6 @@ BUILD_CMD=go build -o $(ARTIFACT_NAME) cmd/shore/shore.go
 LD_FLAGS=-ldflags="-s -w -X 'main.Version=$(VERSION)'"
 
 setup:
-	$(shell export GOPRIVATE="github.com")
-	$(shell export GOPROXY="https://:@***REMOVED***/***REMOVED***/gocenter/")
 	go mod download
 	go mod vendor
 	go mod tidy

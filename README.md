@@ -1,8 +1,5 @@
 # Shore
 
-[![Build Status](https://***REMOVED***.***REMOVED***/buildStatus/icon?job=forge-cd-services%2Fshore%2Fmaster)](https://***REMOVED***.***REMOVED***/job/forge-cd-services/job/shore/job/master/)
-[![Codacy Badge](https://codacy2.autodesk.com/project/badge/Grade/bdad496dad484a0b9da63cd19d6f30eb)](https://codacy2.autodesk.com/ghe/forge-cd-services/shore/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=forge-cd-services/shore&amp;utm_campaign=Badge_Grade)
-[![Codacy Badge](https://codacy2.autodesk.com/project/badge/Coverage/bdad496dad484a0b9da63cd19d6f30eb)](https://codacy2.autodesk.com/ghe/forge-cd-services/shore/dashboard?utm_source=github.com&utm_medium=referral&utm_content=forge-cd-services/shore&utm_campaign=Badge_Coverage)
 
 Shore (verb) is a tool used to develop deployment pipelines for different pipeline based products like Spinnaker.
 
@@ -12,7 +9,7 @@ Shore (verb) is a tool used to develop deployment pipelines for different pipeli
 
 #### Released
 
-1. Shore released binaries can be found in archived format at shore's github releases page:  <https://github.com/Autodeskshore/releases>
+1. Shore released binaries can be found in archived format at shore's github releases page:  <https://github.com/Autodesk/shore/releases>
 2. To download the binary relevant for you platform click on the file name and save the file to the disk.
 3. Un-archive, e.g. for tar.gz for Mac OS:
 
@@ -32,7 +29,7 @@ shore -h
 
 ### As a docker image
 
-1. Shore released docker images links can be found at shore's github releases page:  <https://github.com/Autodeskshore/releases>
+1. Shore released docker images links can be found at shore's github releases page:  <https://github.com/Autodesk/shore/releases>
 
 ```shell
 docker pull ***REMOVED***/shore/shore:v0.0.2
@@ -42,10 +39,7 @@ docker run ***REMOVED***/shore/shore:v0.0.2 -h
 ## Building Shore
 
 ```bash
-git clone git@github.com:forge-cd-service/shore.git
-
-export GOPRIVATE="github.com"
-export GOPROXY="https://:@***REMOVED***/***REMOVED***/gocenter/"
+git clone git@github.com:Autodesk/shore.git
 
 go mod download
 go mod vendor

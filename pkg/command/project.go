@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodesk/shore/pkg/project"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"

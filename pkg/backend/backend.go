@@ -3,7 +3,7 @@ package backend
 import (
 	"net/http"
 
-	"github.com/Autodeskshore/pkg/shore_testing"
+	"github.com/Autodesk/shore/pkg/shore_testing"
 )
 
 // Backend - an interface that describes a generic backend pipeline

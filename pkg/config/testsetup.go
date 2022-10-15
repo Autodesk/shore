@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodesk/shore/pkg/project"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 )

@@ -52,6 +52,6 @@ The `go-jsonnet` engine is embedded into the plugin and shipped with `shore-core
 ### Side Notes
 
 
-Although renderers are pluggable by design, the initial support will focus on `Jsonnet` due to it's implementation simplicity. In the future we can look to extend to further renderers as needed. 
+Although renderers are pluggable by design, the initial support will focus on `Jsonnet` due to it's implementation simplicity. In the future we can look to extend to further renderers as needed.
 
-NOTE: If you'd like to "bring your own" pipeline and leverage Shore's testing, saving, and executing capabilities, please follow the [bring your own pipeline tutorial](https://github.com/Autodeskshore-tutorials/tree/master/tutorials/bring-your-own-pipeline). 
+NOTE: If you'd like to "bring your own" pipeline and leverage Shore's testing, saving, and executing capabilities, please follow the [bring your own pipeline tutorial](https://github.com/Autodesk/shore-tutorials/tree/master/tutorials/bring-your-own-pipeline).

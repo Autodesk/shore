@@ -5,7 +5,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/project"
+	"github.com/Autodesk/shore/pkg/project"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,10 +54,10 @@ func TestLoadShoreConfigFromMalformedFile(t *testing.T) {
 			},
 			"executor": {
 				"type": "spinnaker",
-				"config": 
+				"config":
 			},
 			"profiles": {
-				"default": 
+				"default":
 			}
 		}`
 		afero.WriteFile(proj.FS, path.Join(testPath, "shore.json"), []byte(shoreConfigString), os.ModePerm)

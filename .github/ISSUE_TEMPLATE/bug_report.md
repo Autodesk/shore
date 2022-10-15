@@ -10,11 +10,11 @@ Have you read our Code of Conduct? By filing an Issue, you are expected to compl
 
 -->
 
-### Prerequisites
+### Pre Requisites
 
 * [ ] Put an X between the brackets on this line if you have done all of the following:
   * Checked the FAQs on the message board for common solutions: <link here>
-  * Checked that your issue isn't already filed: <https://github.com/issues?utf8=✓&q=is%3Aissue+user%3Ayourorg>
+  * Checked that your issue isn't already filed: <https://github.com/issues?utf8=✓&q=is%3Aissue+user%3Autodesk>
 
 ### Description
 

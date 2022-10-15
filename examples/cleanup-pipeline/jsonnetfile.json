@@ -4,8 +4,8 @@
     {
       "source": {
         "git": {
-          "remote": "https://github.com/Autodeskspin-lib-jsonnet.git",
-          "subdir": ""
+          "remote": "https://github.com/Autodesk/shore.git",
+          "subdir": "jsonnet-libs/spin-lib-jsonnet"
         }
       },
       "version": "v0.0.4"

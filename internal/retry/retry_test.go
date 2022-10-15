@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autodeskshore/internal/retry"
+	"github.com/Autodesk/shore/internal/retry"
 	"github.com/stretchr/testify/assert"
 )
 

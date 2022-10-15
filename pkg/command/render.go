@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Autodeskshore/pkg/config"
-	"github.com/Autodeskshore/pkg/renderer"
+	"github.com/Autodesk/shore/pkg/config"
+	"github.com/Autodesk/shore/pkg/renderer"
 	"github.com/spf13/cobra"
 )
 

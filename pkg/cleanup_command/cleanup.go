@@ -1,7 +1,7 @@
 package cleanup_command
 
 import (
-	"github.com/Autodeskshore/pkg/command"
+	"github.com/Autodesk/shore/pkg/command"
 	"github.com/spf13/cobra"
 )
 

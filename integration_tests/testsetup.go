@@ -5,10 +5,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/backend/spinnaker"
-	"github.com/Autodeskshore/pkg/command"
-	"github.com/Autodeskshore/pkg/project"
-	"github.com/Autodeskshore/pkg/renderer/jsonnet"
+	"github.com/Autodesk/shore/pkg/backend/spinnaker"
+	"github.com/Autodesk/shore/pkg/command"
+	"github.com/Autodesk/shore/pkg/project"
+	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 )

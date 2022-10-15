@@ -6,7 +6,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/command"
+	"github.com/Autodesk/shore/pkg/command"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

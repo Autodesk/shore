@@ -3,7 +3,7 @@ Package spinnaker - a `shore` backend implementation for Spinnaker APIs
 
 An abstraction layer over Spinnaker communications, unifying the experience for `shore` developers when working with a `spinnaker` backend.
 
-The abstraction implements the standard `shore-backend` interface from github.com/Autodeskshore/pkg/backend/spinnaker
+The abstraction implements the standard `shore-backend` interface from github.com/Autodesk/shore/pkg/backend/spinnaker
 */
 package spinnaker
 
@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autodeskshore/internal/retry"
-	"github.com/Autodeskshore/pkg/shore_testing"
+	"github.com/Autodesk/shore/internal/retry"
+	"github.com/Autodesk/shore/pkg/shore_testing"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
@@ -390,7 +390,7 @@ func (s *SpinClient) TestPipeline(testConfig shore_testing.TestsConfig, onChange
 		testsToRun = configuredTestNames
 	}
 
-	// TODO: Rethink the channel size (https://github.com/Autodeskshore/pull/200#discussion_r2847971)
+	// TODO: Rethink the channel size (https://github.com/Autodesk/shore/pull/200#discussion_r2847971)
 	var ch = make(chan *TestPipelineResponse, len(testsToRun))
 	var wg = sync.WaitGroup{}
 	testErrors := make(map[string][]string)

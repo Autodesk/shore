@@ -16,6 +16,7 @@ import (
 )
 
 // Holds the content of the whole `templates` directory
+//
 //go:embed templates/*
 var templates embed.FS
 
@@ -37,10 +38,9 @@ func NewShoreProjectInit(projectName, render, backend string, libs []string) Sho
 	}
 }
 
-// ProjectName Creates a golang matching package name. It is santized.
+// ProjectName Creates a golang matching package name. It is sanitized.
 // Aligning with what Spinnaker expects:
 // https://github.com/spinnaker/deck/blob/5a9768bc6db2f527a73d6b1f5fb3120c101e094b/app/scripts/modules/core/src/pipeline/create/CreatePipelineModal.tsx#L290
-// Example - github.com/Autodesk/test-init becomes test-init
 func (s ShoreProjectInit) ProjectName() string {
 	reg, _ := regexp.Compile(`[\^/\\?%#]*`)
 	split := strings.Split(s.projectName, "/")
@@ -51,7 +51,7 @@ func (s ShoreProjectInit) ProjectName() string {
 
 // AppName - Creates an Application name that is santized.
 // Aligning with what Spinnaker expects, see comment here:
-// https://github.com/Autodeskshore/issues/108#issuecomment-1607689
+// https://github.com/Autodesk/shore/issues/108#issuecomment-1607689
 func (s ShoreProjectInit) AppName() string {
 	reg, _ := regexp.Compile(`[\W_]*`)
 	split := strings.Split(s.projectName, "/")
@@ -67,6 +67,7 @@ type ProjectInitialize struct {
 
 /*
 Init - Initializes a shore project
+
 	This all or nothing method wraps all the necessary required steps to prep a shore project for a user.
 
 	Creates the following files:

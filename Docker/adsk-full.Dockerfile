@@ -1,4 +1,4 @@
-FROM autodesk-docker-build-images.***REMOVED***/hardened-build/golang-1.16:latest as BASE
+FROM golang:1.17 as BASE
 LABEL maintainer="shore@autodesk.com"
 
 ARG SHORE_VERSION="0.0.5"
@@ -22,7 +22,7 @@ RUN echo "Installing Jsonnet Bundler (${JB_VERSION}), shore (v${SHORE_VERSION}),
     # Jsonnet-Bundler
     wget -q https://github.com/jsonnet-bundler/jsonnet-bundler/releases/download/${JB_VERSION}/${JB_FILE_NAME} && \
     chmod +x ${JB_FILE_NAME} && \
-    mv ${JB_FILE_NAME} jb && \ 
+    mv ${JB_FILE_NAME} jb && \
     # Shore
     wget -q https://***REMOVED***/***REMOVED***/team-shore-generic/shore/${SHORE_VERSION}/linux/amd64/${SHORE_FILE_NAME} && \
     tar -xzvf ${SHORE_FILE_NAME} && \
@@ -43,7 +43,7 @@ RUN echo "Installing Jsonnet Bundler (${JB_VERSION}), shore (v${SHORE_VERSION}),
 
 
 # Final Container
-FROM autodesk-docker-build-images.***REMOVED***/hardened-build/golang-1.16:latest
+FROM golang:1.17
 
 RUN apk add git --no-cache
 

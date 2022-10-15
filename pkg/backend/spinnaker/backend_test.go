@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Autodeskshore/pkg/shore_testing"
+	"github.com/Autodesk/shore/pkg/shore_testing"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	testLog "github.com/sirupsen/logrus/hooks/test"
@@ -53,13 +53,13 @@ func TestInvalidLengthv4UUIDOfVariantRFC1422(t *testing.T) {
 }
 
 func TestIsSpEL(t *testing.T) {
-  err := isSpEL("${ami_application}")
-  assert.True(t,err)
+	err := isSpEL("${ami_application}")
+	assert.True(t, err)
 }
 
 func TestPipelineNameIsntSpEL(t *testing.T) {
-  err := isSpEL("pipeline_name")
-  assert.False(t,err)
+	err := isSpEL("pipeline_name")
+	assert.False(t, err)
 }
 
 func TestValidv4UUIDOfVariantRFC1422isNotSpEL(t *testing.T) {
