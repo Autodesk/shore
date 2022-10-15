@@ -1,9 +1,10 @@
 # Shore
 
-
 Shore (verb) is a tool used to develop deployment pipelines for different pipeline based products like Spinnaker.
 
 ## Installing shore
+
+<!-- TODO Fill these with the correct information -->
 
 ### As a binary
 
@@ -22,10 +23,7 @@ shore -h
 
 #### Current/Nightly build
 
-1. Login to dev ***REMOVED***: `https://***REMOVED***.dev.adskengineer.net/***REMOVED***/webapp/` with your regular ADS credentials
-2. Go to shore's repository `https://***REMOVED***.dev.adskengineer.net/***REMOVED***/list/SHORE-dist/` and download the latest `master` build version
-3. Move the binary to `/usr/local/bin/shore`
-4. Update permissions `chmod +x /usr/local/bin/shore`
+<!-- TODO Fill these with the correct information -->
 
 ### As a docker image
 
@@ -82,10 +80,4 @@ To get these common resources, we recommend using [Jsonnet-Bundler](https://gith
 
 ## Release
 
-[Jenkins Job](https://***REMOVED***.***REMOVED***/job/forge-cd-services/job/shore/)
-
-For `master` branch merges the [`Jenkinsfile`](Jenkinsfile) will create a new file in [Artifactory](https://***REMOVED***.dev.adskengineer.net/***REMOVED***/webapp/#/artifacts/browse/tree/General/SHORE-dist)
-
-The format is `shore-${version}-${branch_name}-${build_number}-${architecture}`.
-
-These builds are recommended for testing, debugging and sharing with other contributors for validations.
+<!-- TODO Fill these with the correct information -->
