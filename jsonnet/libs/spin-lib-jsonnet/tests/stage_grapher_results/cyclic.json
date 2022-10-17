@@ -1,0 +1,27 @@
+{
+  "ascendingRefIds": true,
+  "graphedStages": [
+    {
+      "name": "refId1",
+      "refId": 1,
+      "requisiteStageRefIds": [
+        2
+      ],
+      "type": "test"
+    },
+    {
+      "name": "refId1Too",
+      "refId": 2,
+      "requisiteStageRefIds": [
+        1
+      ],
+      "type": "test"
+    }
+  ],
+  "isAcyclic": false,
+  "testName": "cyclic",
+  "validStages": [
+    true,
+    true
+  ]
+}

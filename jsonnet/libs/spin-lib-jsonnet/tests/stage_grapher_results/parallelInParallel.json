@@ -1,0 +1,96 @@
+{
+  "ascendingRefIds": true,
+  "graphedStages": [
+    {
+      "name": "Brace yourself",
+      "refId": 1,
+      "requisiteStageRefIds": [],
+      "type": "test"
+    },
+    {
+      "name": "Apply",
+      "refId": 2,
+      "requisiteStageRefIds": [
+        1
+      ],
+      "type": "test"
+    },
+    {
+      "name": "Output",
+      "refId": 3,
+      "requisiteStageRefIds": [
+        2
+      ],
+      "type": "test"
+    },
+    {
+      "name": "Slack Notification",
+      "refId": 4,
+      "requisiteStageRefIds": [
+        1
+      ],
+      "type": "test"
+    },
+    {
+      "name": "Email Notification",
+      "refId": 5,
+      "requisiteStageRefIds": [
+        1
+      ],
+      "type": "test"
+    }
+  ],
+  "initialStages": [
+    {
+      "name": "Brace yourself",
+      "type": "test",
+      "refId": "",
+      "requisiteStageRefIds": []
+    },
+    {
+      "parallelStages": [
+        [
+          {
+            "name": "Apply",
+            "type": "test",
+            "refId": "",
+            "requisiteStageRefIds": []
+          },
+          {
+            "name": "Output",
+            "type": "test",
+            "refId": "",
+            "requisiteStageRefIds": []
+          }
+        ],
+        [
+          {
+            "parallelStages": [
+              {
+                "name": "Slack Notification",
+                "type": "test",
+                "refId": "",
+                "requisiteStageRefIds": []
+              },
+              {
+                "name": "Email Notification",
+                "type": "test",
+                "refId": "",
+                "requisiteStageRefIds": []
+              }
+            ]
+          }
+        ]
+      ]
+    }
+  ],
+  "isAcyclic": true,
+  "testName": "parallelInParallel",
+  "validStages": [
+    true,
+    true,
+    true,
+    true,
+    true
+  ]
+}

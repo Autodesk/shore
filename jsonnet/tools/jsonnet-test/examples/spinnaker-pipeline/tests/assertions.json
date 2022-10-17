@@ -1,0 +1,92 @@
+[{
+    "application": "test",
+    "expectedArtifacts": [],
+    "keepWaitingPipelines": false,
+    "limitConcurrent": false,
+    "name": "test",
+    "parallel": false,
+    "parameterConfig": [{
+        "default": "",
+        "description": "",
+        "hasOptions": false,
+        "label": "test123",
+        "name": "test123",
+        "options": [{
+            "value": ""
+        }],
+        "pinned": false,
+        "required": false
+    }],
+    "spinLibJsonnetVersion": "0.0.0",
+    "stages": [{
+            "name": "Stage 1",
+            "refId": "1",
+            "requisiteStageRefIds": [],
+            "skipWaitText": "${ parameters[\"test123\"] }",
+            "type": "wait",
+            "waitTime": 1
+        },
+        {
+            "name": "Stage 2",
+            "refId": "2",
+            "requisiteStageRefIds": [
+                "1"
+            ],
+            "skipWaitText": "${ parameters[\"test123\"] }",
+            "type": "wait",
+            "waitTime": 1
+        },
+        {
+            "failOnFailedExpressions": true,
+            "name": "Stage 3",
+            "refId": "3",
+            "requisiteStageRefIds": [
+                "2"
+            ],
+            "skipWaitText": "${ parameters[\"test123\"] }",
+            "type": "wait",
+            "waitTime": 1
+        },
+        {
+            "account": "test",
+            "alias": "runJob",
+            "application": "kubernetes",
+            "cloudProvider": "kubernetes",
+            "consumeArtifactSource": "propertyFile",
+            "credentials": "test",
+            "manifest": {
+                "apiVersion": "batch/v1",
+                "kind": "Job",
+                "metadata": {
+                    "name": "pi"
+                },
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "containers": [{
+                                "command": [
+                                    "sh",
+                                    "-c",
+                                    "echo SPINNAKER_PROPERTY_TEST=TEST \u0026\u0026 echo SPINNAKER_PROPERTY_OUTPUT=OUTPUT \u0026\u0026 echo SPINNAKER_PROPERTY_SOMETHING=SOMETHING"
+                                ],
+                                "image": "alpine",
+                                "name": "test123"
+                            }],
+                            "restartPolicy": "Never"
+                        }
+                    }
+                }
+            },
+            "manifestArtifact": {},
+            "name": "Test Output",
+            "propertyFile": "test123",
+            "refId": "4",
+            "requisiteStageRefIds": [
+                "3"
+            ],
+            "source": "text",
+            "type": "runJobManifest"
+        }
+    ],
+    "triggers": []
+}]

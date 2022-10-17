@@ -1,0 +1,73 @@
+{
+  "ascendingRefIds": true,
+  "graphedStages": [
+    {
+      "name": "Deploy",
+      "refId": 1,
+      "requisiteStageRefIds": [],
+      "type": "test"
+    },
+    {
+      "name": "Test",
+      "refId": 2,
+      "requisiteStageRefIds": [
+        1
+      ],
+      "type": "test"
+    },
+    {
+      "name": "Rollback",
+      "refId": 3,
+      "requisiteStageRefIds": [
+        2
+      ],
+      "type": "test"
+    },
+    {
+      "name": "Manual check",
+      "refId": 4,
+      "requisiteStageRefIds": [
+        2
+      ],
+      "type": "test"
+    }
+  ],
+  "initialStages": [
+    {
+      "name": "Deploy",
+      "type": "test",
+      "refId": "",
+      "requisiteStageRefIds": []
+    },
+    {
+      "name": "Test",
+      "type": "test",
+      "refId": "",
+      "requisiteStageRefIds": []
+    },
+    {
+      "parallelStages": [
+        {
+          "name": "Rollback",
+          "type": "test",
+          "refId": "",
+          "requisiteStageRefIds": []
+        },
+        {
+          "name": "Manual check",
+          "type": "test",
+          "refId": "",
+          "requisiteStageRefIds": []
+        }
+      ]
+    }
+  ],
+  "isAcyclic": true,
+  "testName": "mixedStage2",
+  "validStages": [
+    true,
+    true,
+    true,
+    true
+  ]
+}
