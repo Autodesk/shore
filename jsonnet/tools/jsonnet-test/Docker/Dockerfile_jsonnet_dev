@@ -1,0 +1,36 @@
+FROM artifactory.dev.adskengineer.net/container-hardening/alpine-hardened-min as BASE
+LABEL maintainer="shore@autodesk.com"
+
+
+ARG JSONNET_VERSION='0.17.0'
+ARG JSONNET_FILE_NAME="go-jsonnet_${JSONNET_VERSION}_Linux_arm64.tar.gz"
+
+ARG JB_FILE_NAME="jb-linux-amd64"
+ARG JB_VERSION="v0.4.0"
+
+ARG JT_VERSION="0.0.6"
+ARG JT_FILE_NAME="jsonnet-test_${JT_VERSION}_Linux_x86_64.tar.gz"
+
+WORKDIR /tmp/build
+
+RUN wget -q https://github.com/google/go-jsonnet/releases/download/v${JSONNET_VERSION}/${JSONNET_FILE_NAME} && \
+    wget -q https://github.com/jsonnet-bundler/jsonnet-bundler/releases/download/${JB_VERSION}/${JB_FILE_NAME} && \
+    wget -q https://art-bobcat.autodesk.com/artifactory/team-shore-generic/jsonnet-test/${JT_VERSION}/linux/amd64/${JT_FILE_NAME} && \
+    tar -xzvf ${JSONNET_FILE_NAME} && \
+    tar -xzvf ${JT_FILE_NAME} && \
+    chmod +x jsonnet && \
+    chmod +x jsonnetfmt && \
+    chmod +x ${JB_FILE_NAME} && \
+    chmod +x jsonnet-test && \
+    mv ${JB_FILE_NAME} jb && \
+    mv jsonnet-test jt
+
+
+FROM artifactory.dev.adskengineer.net/container-hardening/alpine-hardened-min
+
+RUN apk add git --no-cache
+
+COPY --from=BASE /tmp/build/jsonnet /usr/local/bin/jsonnet
+COPY --from=BASE /tmp/build/jsonnetfmt /usr/local/bin/jsonnetfmt
+COPY --from=BASE /tmp/build/jb /usr/local/bin/jb
+COPY --from=BASE /tmp/build/jt /usr/local/bin/jt

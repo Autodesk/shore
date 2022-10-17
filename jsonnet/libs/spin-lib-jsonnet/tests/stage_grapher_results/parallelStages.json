@@ -1,0 +1,41 @@
+{
+  "ascendingRefIds": true,
+  "graphedStages": [
+    {
+      "name": "Slack Notification",
+      "refId": 1,
+      "requisiteStageRefIds": [],
+      "type": "test"
+    },
+    {
+      "name": "Email Notification",
+      "refId": 2,
+      "requisiteStageRefIds": [],
+      "type": "test"
+    }
+  ],
+  "initialStages": [
+    {
+      "parallelStages": [
+        {
+          "name": "Slack Notification",
+          "type": "test",
+          "refId": "",
+          "requisiteStageRefIds": []
+        },
+        {
+          "name": "Email Notification",
+          "type": "test",
+          "refId": "",
+          "requisiteStageRefIds": []
+        }
+      ]
+    }
+  ],
+  "isAcyclic": true,
+  "testName": "parallelStages",
+  "validStages": [
+    true,
+    true
+  ]
+}

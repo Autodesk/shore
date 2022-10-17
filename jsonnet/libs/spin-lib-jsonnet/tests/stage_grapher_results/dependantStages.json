@@ -1,0 +1,39 @@
+{
+  "ascendingRefIds": true,
+  "graphedStages": [
+    {
+      "name": "Apply",
+      "refId": 1,
+      "requisiteStageRefIds": [],
+      "type": "test"
+    },
+    {
+      "name": "Output",
+      "refId": 2,
+      "requisiteStageRefIds": [
+        1
+      ],
+      "type": "test"
+    }
+  ],
+  "initialStages": [
+    {
+      "name": "Apply",
+      "type": "test",
+      "refId": "",
+      "requisiteStageRefIds": []
+    },
+    {
+      "name": "Output",
+      "type": "test",
+      "refId": "",
+      "requisiteStageRefIds": []
+    }
+  ],
+  "isAcyclic": true,
+  "testName": "dependantStages",
+  "validStages": [
+    true,
+    true
+  ]
+}

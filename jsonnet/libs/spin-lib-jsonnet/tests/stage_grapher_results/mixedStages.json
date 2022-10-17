@@ -1,0 +1,108 @@
+{
+   "ascendingRefIds": true,
+   "graphedStages": [
+      {
+         "name": "Predeploy infra",
+         "refId": 1,
+         "requisiteStageRefIds": [ ],
+         "type": "test"
+      },
+      {
+         "name": "Deploy Canary",
+         "refId": 2,
+         "requisiteStageRefIds": [
+            1
+         ],
+         "type": "test"
+      },
+      {
+         "name": "Wait for Canary",
+         "refId": 3,
+         "requisiteStageRefIds": [
+            2
+         ],
+         "type": "test"
+      },
+      {
+         "name": "Deploy Baseline",
+         "refId": 4,
+         "requisiteStageRefIds": [
+            1
+         ],
+         "type": "test"
+      },
+      {
+         "name": "Wait for Baseline",
+         "refId": 5,
+         "requisiteStageRefIds": [
+            4
+         ],
+         "type": "test"
+      },
+      {
+         "name": "Verify Canary against Baseline",
+         "refId": 6,
+         "requisiteStageRefIds": [
+            3,
+            5
+         ],
+         "type": "test"
+      }
+   ],
+   "initialStages": [
+      {
+         "name": "Predeploy infra",
+         "type": "test",
+                  "refId": "",
+          "requisiteStageRefIds": []
+      },
+      {
+         "parallelStages": [
+            [
+               {
+                  "name": "Deploy Canary",
+                  "type": "test",
+                           "refId": "",
+          "requisiteStageRefIds": []
+               },
+               {
+                  "name": "Wait for Canary",
+                  "type": "test",
+                           "refId": "",
+          "requisiteStageRefIds": []
+               }
+            ],
+            [
+               {
+                  "name": "Deploy Baseline",
+                  "type": "test",
+                           "refId": "",
+          "requisiteStageRefIds": []
+               },
+               {
+                  "name": "Wait for Baseline",
+                  "type": "test",
+                           "refId": "",
+          "requisiteStageRefIds": []
+               }
+            ]
+         ]
+      },
+      {
+         "name": "Verify Canary against Baseline",
+         "type": "test",
+                  "refId": "",
+          "requisiteStageRefIds": []
+      }
+   ],
+   "isAcyclic": true,
+   "testName": "mixedStages",
+   "validStages": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+   ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "dependencies": [
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/Autodesk/shore.git",
+          "subdir": "jsonnet/libs/spin-lib-jsonnet"
+        }
+      },
+      "version": "master"
+    }
+  ],
+  "legacyImports": false
+}
