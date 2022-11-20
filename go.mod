@@ -9,14 +9,14 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/json-iterator/go v1.1.12
-	github.com/jsonnet-bundler/jsonnet-bundler v0.4.0
+	github.com/jsonnet-bundler/jsonnet-bundler v0.5.1
 	github.com/manifoldco/promptui v0.9.0
 	github.com/nsf/jsondiff v0.0.0-20210926074059-1e845ec5d249
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/afero v1.8.2
 	github.com/spf13/cobra v1.4.0
 	github.com/spinnaker/spin v1.27.1
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.4
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -60,7 +60,6 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/client-go v11.0.0+incompatible // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
