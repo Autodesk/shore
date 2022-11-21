@@ -3,7 +3,7 @@ module github.com/Autodesk/shore
 go 1.18
 
 require (
-	github.com/briandowns/spinner v1.18.1
+	github.com/briandowns/spinner v1.19.0
 	github.com/fatih/color v1.13.0
 	github.com/google/go-jsonnet v0.18.0
 	github.com/google/uuid v1.3.0

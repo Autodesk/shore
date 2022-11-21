@@ -22,7 +22,7 @@ github.com/armon/go-radix
 # github.com/bgentry/speakeasy v0.1.0
 ## explicit
 github.com/bgentry/speakeasy
-# github.com/briandowns/spinner v1.18.1
+# github.com/briandowns/spinner v1.19.0
 ## explicit; go 1.14
 github.com/briandowns/spinner
 # github.com/chzyer/readline v1.5.0
