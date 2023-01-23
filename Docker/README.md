@@ -4,14 +4,14 @@ These images are meant for development purposes.
 
 Contents of each of the images are:
 
-* `adsk-full` - `shore`, `jsonnet-bundler` (`jb`), `jsonnet-test` (`jt`), `jsonnet`, `jsonnetfmt`, `spin`. Published.
-* `local` - adsk-full, but also `shore` is built from local source. Not published.
+* `full` - `shore`, `jsonnet-bundler` (`jb`), `jsonnet`, `jsonnetfmt`, `spin`. Published.
+* `local` - full, but also `shore` is built from local source. Not published.
 
-The name of the images is `shore-dev`. Each image is tagged with the shore's version and suffix based on the image, for instance `v0.0.4-adsk-full`.
+The name of the images is `shore-dev`. Each image is tagged with the shore's version and suffix based on the image, for instance `v0.0.10-full`.
 
-Images can be pulled from `art-bobcat`:
+Images can be pulled from:
 ```shell
-docker pull ***REMOVED***/shore/shore-dev:v0.0.4-adsk-full
+docker pull ***REMOVED***/shore/shore-dev:v0.0.10-full
 ```
 
 ## Local
