@@ -92,6 +92,7 @@ func init() {
 	rootCmd.AddCommand(command.NewRenderCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewDiffCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewSaveCommand(commonDependencies))
+	rootCmd.AddCommand(command.NewDeleteCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewExecCommand(commonDependencies, "exec"))
 	rootCmd.AddCommand(command.NewTestRemoteCommand(commonDependencies))
 	rootCmd.AddCommand(cleanup_command.NewCleanupCommand(commonDependencies))

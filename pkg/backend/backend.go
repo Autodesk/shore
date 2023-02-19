@@ -16,4 +16,5 @@ type Backend interface {
 	// TODO: Reconsider `onChange`, it may be a channel to communicate data between `shore-cli` & the Testing process in an async fashion.
 	TestPipeline(testConfig shore_testing.TestsConfig, onChange func(), stringify bool) error
 	GetPipeline(application string, pipelineName string) (map[string]interface{}, *http.Response, error)
+	DeletePipeline(pipelineJSON string) (*http.Response, error)
 }

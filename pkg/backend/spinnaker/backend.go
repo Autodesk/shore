@@ -49,6 +49,7 @@ type TestPipelineResponse struct {
 // PipelineControllerAPI - Interface wrapper for the Pipeline Controller API
 type PipelineControllerAPI interface {
 	SavePipelineUsingPOST(ctx context.Context, pipeline interface{}, localVarOptionals *spinGateApi.PipelineControllerApiSavePipelineUsingPOSTOpts) (*http.Response, error)
+	DeletePipelineUsingDELETE(ctx context.Context, application string, pipelineName string) (*http.Response, error)
 }
 
 // SpinCLI is a wrapper for the spin-cli gateway client backed by swagger
@@ -852,6 +853,83 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 
 	if pipelineID != "" {
 		s.log.Info("Saved already existing pipeline with ID", pipelineID)
+	}
+
+	return res, nil
+}
+
+func (s *SpinClient) deletePipeline(application string, pipeline string) (*http.Response, error) {
+	if err := s.initializeAPI(); err != nil {
+		return &http.Response{}, err
+	}
+
+	// foundPipeline, queryResp, err := s.ApplicationControllerAPI.GetPipelineConfigUsingGET(s.Context, application, pipelineName)
+	// if err != nil {
+	// 	wrappedErr := NewApplicationControllerError(err, queryResp)
+	// 	if wrappedErr.StatusCode() != http.StatusNotFound {
+	// 		return pipelineID, nil, wrappedErr
+	// 	}
+
+	// 	s.log.Info("Pipeline %q not found in application %q", pipelineName, application)
+	// }
+
+	// // pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
+	// if len(foundPipeline) > 0 {
+	// 	s.log.Info("Pipeline %q found with ID %q", foundPipeline["name"], foundPipeline["id"], application)
+
+	// 	pipeline["id"] = foundPipeline["id"].(string)
+	// 	pipelineID = foundPipeline["id"].(string)
+	// }
+
+	res, err := s.PipelineControllerAPI.DeletePipelineUsingDELETE(s.Context, application, pipeline)
+	if err != nil {
+		return res, NewApplicationControllerError(err, res)
+	}
+
+	return res, nil
+}
+
+// SavePipeline - Creates or Update nested pipelines recursively
+func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error) {
+
+	if err := s.initializeAPI(); err != nil {
+		return &http.Response{}, err
+	}
+
+	var pipeline map[string]interface{}
+
+	err := jsoniter.Unmarshal([]byte(pipelineJSON), &pipeline)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := s.isValidPipeline(pipeline); err != nil {
+		return &http.Response{}, err
+	}
+
+	// // Check whether a pipeline has stages list
+	// if stages, exists := pipeline["stages"]; exists {
+
+	// 	hasChildPipelines, err := hasValidChildPipelineStages(stages.([]interface{}), []string{pipeline["application"].(string)})
+	// 	if err != nil {
+	// 		return &http.Response{}, err
+	// 	}
+
+	// 	// If any of stages is of type pipeline create those pipelines recursively
+	// 	if hasChildPipelines {
+	// 		if err := s.deleteNestedPipeline(stages, pipeline); err != nil {
+	// 			return &http.Response{}, err
+	// 		}
+	// 	}
+	// }
+
+	application := pipeline["application"].(string)
+	pipelineName := pipeline["name"].(string)
+
+	res, err := s.deletePipeline(application, pipelineName)
+	if err != nil {
+		return &http.Response{}, err
 	}
 
 	return res, nil
