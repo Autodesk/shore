@@ -950,7 +950,7 @@ func (s *SpinClient) deleteNestedPipeline(stages interface{}, pipeline map[strin
 	return nil
 }
 
-// DeletePipeline - Creates or Update nested pipelines recursively
+// DeletePipeline - Deletes nested pipelines recursively
 func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error) {
 
 	if err := s.initializeAPI(); err != nil {
@@ -977,7 +977,7 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 			return &http.Response{}, err
 		}
 
-		// If any of stages is of type pipeline create those pipelines recursively
+		// If any of stages is of type pipeline delete those pipelines recursively
 		if hasChildPipelines {
 			if err := s.deleteNestedPipeline(stages, pipeline); err != nil {
 				return &http.Response{}, err
