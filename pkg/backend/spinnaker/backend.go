@@ -889,7 +889,68 @@ func (s *SpinClient) deletePipeline(application string, pipeline string) (*http.
 	return res, nil
 }
 
-// SavePipeline - Creates or Update nested pipelines recursively
+// A DFS implementation that runs through the pipeline/stages tree.
+// Finds child pipelines and deletes them.
+// Each iteration of the stages loop will look for "pipeline" key in each element
+// If it finds one and it is another pipeline it will start another iteration on that pipeline's stages
+// Once a pipeline with no "pipeline" stages is met - it is deleted
+// The parent loop continues until all its stages of type pipeline are deleted.
+// Once all loops are closed the most top level pipeline gets deleted.
+func (s *SpinClient) deleteNestedPipeline(stages interface{}, pipeline map[string]interface{}) error {
+	for _, stage := range stages.([]interface{}) {
+		stage := stage.(map[string]interface{})
+		stagePipelineField, exists := stage["pipeline"]
+		if !exists {
+			continue
+		}
+
+		switch stagePipelineField.(type) {
+		case string:
+			continue
+		}
+
+		childPipeline := stage["pipeline"].(map[string]interface{})
+
+		if err := s.isValidPipeline(childPipeline); err != nil {
+			return err
+		}
+
+		parentPipelineApplication := []string{pipeline["application"].(string)}
+
+		if err := isValidPipelineApplication(childPipeline, parentPipelineApplication); err != nil {
+			return err
+		}
+
+		childPipelineStages, exists := childPipeline["stages"]
+		if exists {
+
+			hasChildPipelines, err := hasValidChildPipelineStages(childPipelineStages.([]interface{}), parentPipelineApplication)
+			if err != nil {
+				return err
+			}
+
+			// If any of stages is of type pipeline create those pipelines recursively
+			if hasChildPipelines {
+				if err := s.deleteNestedPipeline(childPipelineStages, childPipeline); err != nil {
+					return err
+				}
+			}
+		}
+
+		// After we return from recursion we save "this layer" child pipeline
+		childPipelineName := childPipeline["name"].(string)
+
+		res, err := s.deletePipeline(parentPipelineApplication[0], childPipelineName)
+		if err != nil {
+			return err
+		}
+		s.log.Info(res)
+	}
+
+	return nil
+}
+
+// DeletePipeline - Creates or Update nested pipelines recursively
 func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error) {
 
 	if err := s.initializeAPI(); err != nil {
@@ -908,21 +969,21 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 		return &http.Response{}, err
 	}
 
-	// // Check whether a pipeline has stages list
-	// if stages, exists := pipeline["stages"]; exists {
+	// Check whether a pipeline has stages list
+	if stages, exists := pipeline["stages"]; exists {
 
-	// 	hasChildPipelines, err := hasValidChildPipelineStages(stages.([]interface{}), []string{pipeline["application"].(string)})
-	// 	if err != nil {
-	// 		return &http.Response{}, err
-	// 	}
+		hasChildPipelines, err := hasValidChildPipelineStages(stages.([]interface{}), []string{pipeline["application"].(string)})
+		if err != nil {
+			return &http.Response{}, err
+		}
 
-	// 	// If any of stages is of type pipeline create those pipelines recursively
-	// 	if hasChildPipelines {
-	// 		if err := s.deleteNestedPipeline(stages, pipeline); err != nil {
-	// 			return &http.Response{}, err
-	// 		}
-	// 	}
-	// }
+		// If any of stages is of type pipeline create those pipelines recursively
+		if hasChildPipelines {
+			if err := s.deleteNestedPipeline(stages, pipeline); err != nil {
+				return &http.Response{}, err
+			}
+		}
+	}
 
 	application := pipeline["application"].(string)
 	pipelineName := pipeline["name"].(string)
