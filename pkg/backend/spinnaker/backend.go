@@ -988,10 +988,13 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 	application := pipeline["application"].(string)
 	pipelineName := pipeline["name"].(string)
 
-	res, err := s.deletePipeline(application, pipelineName)
+	_, err = s.deletePipeline(application, pipelineName)
 	if err != nil {
 		return &http.Response{}, err
 	}
 
-	return res, nil
+	return &http.Response{
+		Status:     "200 OK",
+		StatusCode: http.StatusOK,
+	}, nil
 }

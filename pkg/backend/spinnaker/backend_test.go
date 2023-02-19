@@ -368,6 +368,91 @@ func TestSaveSuccess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, res.StatusCode, http.StatusOK)
 }
+func TestDeleteSuccess(t *testing.T) {
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Child pipeline 2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2.2",
+								"type": "pipeline",
+								"stages": [
+									{
+										"name": "Child pipeline 2.2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	res, err := cli.DeletePipeline(nestedPipelineString)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, res.StatusCode, http.StatusOK)
+}
+
+func TestDeleteSimplePipelineSuccess(t *testing.T) {
+	// Given
+	nestedPipelineString := `
+	{
+		"application": "test123",
+		"name": "simple pipeline",
+		"stages": [
+			 {
+					"name": "Wait",
+					"waitTime": 1,
+					"type": "wait"
+			 }
+		]
+ }
+	`
+
+	// Test
+	res, err := cli.DeletePipeline(nestedPipelineString)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, res.StatusCode, http.StatusOK)
+}
 
 func TestSaveSimplePipelineSuccess(t *testing.T) {
 	// Given
@@ -391,6 +476,105 @@ func TestSaveSimplePipelineSuccess(t *testing.T) {
 	// Assert
 	assert.Nil(t, err)
 	assert.Equal(t, res.StatusCode, http.StatusOK)
+}
+
+func TestMissingApplicationFailedDelete(t *testing.T) {
+	// Given
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"name": "Child pipeline 2 stage",
+							"application": "appname",
+							"type": "pipeline"
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.DeletePipeline(nestedPipelineString)
+
+	// Assert
+	assert.EqualError(t, err, "required pipeline key 'application' missing")
+}
+
+func TestMissingNameFailedDelete(t *testing.T) {
+	// Given
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name": "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"stages": [
+						{
+							"name": "Child pipeline 2 stage",
+							"application": "appname",
+							"type": "pipeline"
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.DeletePipeline(nestedPipelineString)
+
+	// Assert
+	assert.EqualError(t, err, "required pipeline key 'name' missing")
+}
+
+func TestPipelineChildPipelineWrongApplicationFailedDelete(t *testing.T) {
+	// Given
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "another appname",
+					"name": "Child pipeline 1",
+					"type": "pipeline",
+					"stages": [
+						{
+							"name": "child pipeline 1 stage"
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+
+	// Test
+	_, err := cli.DeletePipeline(nestedPipelineString)
+
+	// Assert
+	assert.EqualError(t, err, "pipeline 'application' key value should match the value of parent pipeline 'application' key")
 }
 
 func TestMissingApplicationFailedSave(t *testing.T) {
