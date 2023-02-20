@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Autodesk/shore/pkg/config"
 	"github.com/Autodesk/shore/pkg/renderer"
+	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +36,12 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			d.Logger.Info("Calling Backend.DeletePipeline")
+			s := spinner.New(spinner.CharSets[9], 1000*time.Millisecond)
+			s.Writer = color.Error
+			s.Suffix = " Deleting spinnaker pipelines, this may take a few moments (depending on Internet traffic!)\n"
+			s.Start()
 			res, err := d.Backend.DeletePipeline(pipeline, dryRun)
+			s.Stop()
 
 			if err != nil {
 				d.Logger.Warnf("Delete pipeline returned an error: %v", err)

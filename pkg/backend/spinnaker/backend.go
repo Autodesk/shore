@@ -22,6 +22,7 @@ import (
 
 	"github.com/Autodesk/shore/internal/retry"
 	"github.com/Autodesk/shore/pkg/shore_testing"
+	"github.com/fatih/color"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	jsoniter "github.com/json-iterator/go"
@@ -963,7 +964,7 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string, dryRun bool) (*http.Res
 	pipelineName := pipeline["name"].(string)
 
 	pipelineNames = append(pipelineNames, pipelineName)
-	s.log.Warnf("Deleting Pipelines: %s", pipelineNames)
+	color.Yellow(fmt.Sprintf("Deleting Pipelines: %s", pipelineNames))
 
 	if dryRun {
 		return &http.Response{
@@ -983,8 +984,9 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string, dryRun bool) (*http.Res
 	for deletion := range ch {
 		deletions = append(deletions, deletion)
 	}
+
 	for _, d := range deletions {
-		s.log.Warnf("DELETE [%d]: %s - %s", d.StatusCode, d.App, d.Name)
+		color.Red(fmt.Sprintf("DELETED: %s - %s", d.App, d.Name))
 	}
 
 	if err != nil {
