@@ -858,32 +858,6 @@ func (s *SpinClient) SavePipeline(pipelineJSON string) (*http.Response, error) {
 	return res, nil
 }
 
-func (s *SpinClient) deletePipelines(application string, pipelineNames []string, ch chan *http.Response) error {
-	if err := s.initializeAPI(); err != nil {
-		return err
-	}
-
-	wg := sync.WaitGroup{}
-	// errCh := make(chan error)
-	for _, pipelineName := range pipelineNames {
-		wg.Add(1)
-		go func(appName string, pipelineName string, ch chan *http.Response) {
-			defer wg.Done()
-			s.log.Warning("DELETE ", appName, ": ", pipelineName)
-			res, err := s.PipelineControllerAPI.DeletePipelineUsingDELETE(s.Context, appName, pipelineName)
-			ch <- res
-			if err != nil {
-				s.log.Error(res)
-				// return
-			}
-		}(application, pipelineName, ch)
-	}
-	wg.Wait()
-	close(ch)
-
-	return nil
-}
-
 // A DFS implementation that runs through the pipeline/stages tree.
 // Finds child pipelines and deletes them.
 // Each iteration of the stages loop will look for "pipeline" key in each element
@@ -942,13 +916,19 @@ func (s *SpinClient) getNestedPipelineNames(stages interface{}, pipeline map[str
 	return pipelineNames, nil
 }
 
+type DeletePipelineResponse struct {
+	StatusCode int
+	App        string
+	Name       string
+}
+
 // DeletePipeline - Deletes nested pipelines recursively
-func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error) {
-
-	if err := s.initializeAPI(); err != nil {
-		return &http.Response{}, err
+func (s *SpinClient) DeletePipeline(pipelineJSON string, dryRun bool) (*http.Response, error) {
+	if !dryRun {
+		if err := s.initializeAPI(); err != nil {
+			return &http.Response{}, err
+		}
 	}
-
 	var pipeline map[string]interface{}
 
 	err := jsoniter.Unmarshal([]byte(pipelineJSON), &pipeline)
@@ -963,7 +943,6 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 
 	pipelineNames := []string{}
 
-	// Check whether a pipeline has stages list
 	if stages, exists := pipeline["stages"]; exists {
 
 		hasChildPipelines, err := hasValidChildPipelineStages(stages.([]interface{}), []string{pipeline["application"].(string)})
@@ -984,18 +963,65 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 	pipelineName := pipeline["name"].(string)
 
 	pipelineNames = append(pipelineNames, pipelineName)
-	s.log.Warning("Deleting Pipelines: ", pipelineNames)
+	s.log.Warnf("Deleting Pipelines: %s", pipelineNames)
 
-	ch := make(chan *http.Response, len(pipelineNames))
+	if dryRun {
+		return &http.Response{
+			Status:     "200 OK",
+			StatusCode: http.StatusOK,
+		}, nil
+	}
 
-	err = s.deletePipelines(application, pipelineNames, ch)
+	ch := make(chan DeletePipelineResponse, len(pipelineNames))
+	errCh := make(chan error)
+
+	go s.deletePipelines(application, pipelineNames, ch, errCh)
+	err = <-errCh
+
+	deletions := []DeletePipelineResponse{}
+
+	for deletion := range ch {
+		deletions = append(deletions, deletion)
+	}
+	for _, d := range deletions {
+		s.log.Warnf("DELETE [%d]: %s - %s", d.StatusCode, d.App, d.Name)
+	}
 
 	if err != nil {
-		return &http.Response{}, err
+		return &http.Response{StatusCode: http.StatusBadRequest}, err
 	}
 
 	return &http.Response{
 		Status:     "200 OK",
 		StatusCode: http.StatusOK,
 	}, nil
+}
+
+func (s *SpinClient) deletePipelines(application string, pipelineNames []string, ch chan DeletePipelineResponse, errCh chan error) {
+	if err := s.initializeAPI(); err != nil {
+		errCh <- err
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	for _, pipelineName := range pipelineNames {
+		wg.Add(1)
+		go func(appName string, pipelineName string, ch chan DeletePipelineResponse, errCh chan error) {
+			defer wg.Done()
+			res, err := s.PipelineControllerAPI.DeletePipelineUsingDELETE(s.Context, appName, pipelineName)
+
+			ch <- DeletePipelineResponse{
+				StatusCode: res.StatusCode,
+				App:        appName,
+				Name:       pipelineName,
+			}
+			if err != nil {
+				errCh <- err
+			}
+		}(application, pipelineName, ch, errCh)
+	}
+
+	wg.Wait()
+	close(errCh)
+	close(ch)
 }

@@ -14,6 +14,7 @@ import (
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
 func NewDeleteCommand(d *Dependencies) *cobra.Command {
 	var renderVals string
+	var dryRun bool
 
 	cmd := &cobra.Command{
 		Use:   "delete",
@@ -33,7 +34,7 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 			}
 
 			d.Logger.Info("Calling Backend.DeletePipeline")
-			res, err := d.Backend.DeletePipeline(pipeline)
+			res, err := d.Backend.DeletePipeline(pipeline, dryRun)
 
 			if err != nil {
 				d.Logger.Warnf("Delete pipeline returned an error: %v", err)
@@ -47,6 +48,7 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&renderVals, "render-values", "r", "", "A JSON string for the render. If not provided the render.[json/yml/yaml] file is used.")
+	cmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "list pipelines to be deleted - dry run")
 
 	return cmd
 }
