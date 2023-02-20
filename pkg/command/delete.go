@@ -3,6 +3,7 @@ package command
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -36,12 +37,7 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			s := spinner.New(spinner.CharSets[9], 1000*time.Millisecond)
-			s.Writer = color.Error
-			s.Suffix = " Deleting spinnaker pipelines, this may take a few moments (depending on Internet traffic!)\n"
-			s.Start()
-			res, err := d.Backend.DeletePipeline(pipeline, dryRun)
-			s.Stop()
+			res, err := SpinnerWrapper(pipeline, dryRun, d.Backend.DeletePipeline)
 
 			if err != nil {
 				d.Logger.Warnf("Delete pipeline returned an error: %v", err)
@@ -58,4 +54,20 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 	cmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "list pipelines to be deleted - dry run")
 
 	return cmd
+}
+
+func SpinnerWrapper(pipeline string, dryRun bool, f func(string, bool) (*http.Response, error)) (*http.Response, error) {
+	s := spinner.New(spinner.CharSets[9], 1000*time.Millisecond)
+	if !dryRun {
+		s.Writer = color.Error
+		s.Suffix = " Deleting spinnaker pipelines, this may take a few moments (depending on Internet traffic!)\n"
+		s.Start()
+	}
+
+	res, err := f(pipeline, dryRun)
+
+	if !dryRun {
+		s.Stop()
+	}
+	return res, err
 }
