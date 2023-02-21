@@ -1178,7 +1178,6 @@ func TestTestingRemoteStringifyFalse(t *testing.T) {
 }
 
 func TestDeleteSuccess(t *testing.T) {
-	dryRun := false
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -1233,7 +1232,7 @@ func TestDeleteSuccess(t *testing.T) {
 	`
 
 	// Test
-	res, err := cli.DeletePipeline(nestedPipelineString, dryRun)
+	res, err := cli.DeletePipeline(nestedPipelineString)
 
 	// Assert
 	assert.Nil(t, err)
@@ -1242,7 +1241,6 @@ func TestDeleteSuccess(t *testing.T) {
 
 func TestDeleteSimplePipelineSuccess(t *testing.T) {
 	// Given
-	dryRun := false
 	nestedPipelineString := `
 	{
 		"application": "test123",
@@ -1258,7 +1256,7 @@ func TestDeleteSimplePipelineSuccess(t *testing.T) {
 	`
 
 	// Test
-	res, err := cli.DeletePipeline(nestedPipelineString, dryRun)
+	res, err := cli.DeletePipeline(nestedPipelineString)
 
 	// Assert
 	assert.Nil(t, err)
@@ -1267,7 +1265,6 @@ func TestDeleteSimplePipelineSuccess(t *testing.T) {
 
 func TestMissingApplicationFailedDelete(t *testing.T) {
 	// Given
-	dryRun := false
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -1293,7 +1290,7 @@ func TestMissingApplicationFailedDelete(t *testing.T) {
 	`
 
 	// Test
-	_, err := cli.DeletePipeline(nestedPipelineString, dryRun)
+	_, err := cli.DeletePipeline(nestedPipelineString)
 
 	// Assert
 	assert.EqualError(t, err, "required pipeline key 'application' missing")
@@ -1301,7 +1298,6 @@ func TestMissingApplicationFailedDelete(t *testing.T) {
 
 func TestMissingNameFailedDelete(t *testing.T) {
 	// Given
-	dryRun := false
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -1327,7 +1323,7 @@ func TestMissingNameFailedDelete(t *testing.T) {
 	`
 
 	// Test
-	_, err := cli.DeletePipeline(nestedPipelineString, dryRun)
+	_, err := cli.DeletePipeline(nestedPipelineString)
 
 	// Assert
 	assert.EqualError(t, err, "required pipeline key 'name' missing")
@@ -1335,7 +1331,6 @@ func TestMissingNameFailedDelete(t *testing.T) {
 
 func TestPipelineChildPipelineWrongApplicationFailedDelete(t *testing.T) {
 	// Given
-	dryRun := false
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -1361,14 +1356,13 @@ func TestPipelineChildPipelineWrongApplicationFailedDelete(t *testing.T) {
 	`
 
 	// Test
-	_, err := cli.DeletePipeline(nestedPipelineString, dryRun)
+	_, err := cli.DeletePipeline(nestedPipelineString)
 
 	// Assert
 	assert.EqualError(t, err, "pipeline 'application' key value should match the value of parent pipeline 'application' key")
 }
 
 func TestDeleteDryRunSuccess(t *testing.T) {
-	dryRun := true
 	nestedPipelineString := `
 	{
 		"application": "appname",
@@ -1423,7 +1417,7 @@ func TestDeleteDryRunSuccess(t *testing.T) {
 	`
 
 	// Test
-	res, err := cli.DeletePipeline(nestedPipelineString, dryRun)
+	res, err := cli.DeletePipeline(nestedPipelineString)
 
 	// Assert
 	assert.Nil(t, err)
@@ -1565,4 +1559,69 @@ func TestGetPipelinesNames(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, err2)
 	assert.Equal(t, expectedPipelineNames, pipelineNames)
+}
+
+func TestGetPipelinesNamesAndApplication(t *testing.T) {
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Child pipeline 2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2.2",
+								"type": "pipeline",
+								"stages": [
+									{
+										"name": "Child pipeline 2.2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+	expectedPipelineNames := []string{"Child pipeline 2", "Child pipeline 2.2", "Child pipeline 1", "Nested pipeline"}
+	expectedApplication := "appname"
+
+	// Test
+	pipelineNames, application, err := cli.GetPipelinesNamesAndApplication(nestedPipelineString)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Equal(t, expectedPipelineNames, pipelineNames)
+	assert.Equal(t, expectedApplication, application)
 }

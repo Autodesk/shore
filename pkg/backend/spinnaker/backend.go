@@ -22,7 +22,6 @@ import (
 
 	"github.com/Autodesk/shore/internal/retry"
 	"github.com/Autodesk/shore/pkg/shore_testing"
-	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
@@ -950,19 +949,8 @@ func (s *SpinClient) GetPipelinesNames(pipeline map[string]interface{}) ([]strin
 	return pipelineNames, nil
 }
 
-// DeletePipeline - Deletes nested pipelines recursively
-func (s *SpinClient) DeletePipeline(pipelineJSON string, dryRun bool) (*http.Response, error) {
-	sp := spinner.New(spinner.CharSets[9], 50*time.Millisecond)
-
-	if !dryRun {
-		sp.Writer = color.Error
-		sp.Prefix = "Deleting spinnaker pipelines, please wait... "
-		sp.Start()
-		if err := s.initializeAPI(); err != nil {
-			return &http.Response{}, err
-		}
-		fmt.Print("\n")
-	}
+// GetPipelinesNamesAndApplication - gets list of names of all pipelines and application name configured
+func (s *SpinClient) GetPipelinesNamesAndApplication(pipelineJSON string) ([]string, string, error) {
 
 	var pipeline map[string]interface{}
 
@@ -973,12 +961,28 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string, dryRun bool) (*http.Res
 	}
 
 	if err := s.isValidPipeline(pipeline); err != nil {
-		return &http.Response{}, err
+		return []string{}, "", err
 	}
 
 	application := pipeline["application"].(string)
 
 	pipelineNames, err := s.GetPipelinesNames(pipeline)
+
+	if err != nil {
+		return []string{}, "", err
+	}
+
+	return pipelineNames, application, nil
+}
+
+// DeletePipeline - Deletes nested pipelines recursively
+func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error) {
+
+	if err := s.initializeAPI(); err != nil {
+		return &http.Response{}, err
+	}
+
+	pipelineNames, application, err := s.GetPipelinesNamesAndApplication(pipelineJSON)
 
 	if err != nil {
 		return &http.Response{}, err
@@ -987,27 +991,24 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string, dryRun bool) (*http.Res
 	color.Yellow(fmt.Sprintf("Application: %s", application))
 	color.Yellow(fmt.Sprintf("Pipelines to delete: %s", pipelineNames))
 
-	if !dryRun {
-		ch := make(chan DeletePipelineResponse, len(pipelineNames))
-		errCh := make(chan error)
+	ch := make(chan DeletePipelineResponse, len(pipelineNames))
+	errCh := make(chan error)
 
-		go s.deletePipelines(application, pipelineNames, ch, errCh)
-		err = <-errCh
+	go s.deletePipelines(application, pipelineNames, ch, errCh)
+	err = <-errCh
 
-		deletions := []DeletePipelineResponse{}
+	deletions := []DeletePipelineResponse{}
 
-		for deletion := range ch {
-			deletions = append(deletions, deletion)
-		}
-		fmt.Print("\n")
-		for _, d := range deletions {
-			color.Red(fmt.Sprintf("DELETED: %s - %s", d.App, d.Name))
-		}
+	for deletion := range ch {
+		deletions = append(deletions, deletion)
+	}
 
-		if err != nil {
-			return &http.Response{StatusCode: http.StatusBadRequest}, err
-		}
-		sp.Stop()
+	for _, d := range deletions {
+		color.Red(fmt.Sprintf("DELETED: %s - %s", d.App, d.Name))
+	}
+
+	if err != nil {
+		return &http.Response{StatusCode: http.StatusBadRequest}, err
 	}
 
 	return &http.Response{

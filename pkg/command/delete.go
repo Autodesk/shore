@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/Autodesk/shore/pkg/config"
 	"github.com/Autodesk/shore/pkg/renderer"
+	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +36,28 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			// res, err := SpinnerWrapper(pipeline, dryRun, d.Backend.DeletePipeline)
-			res, err := d.Backend.DeletePipeline(pipeline, dryRun)
+			s := spinner.New(spinner.CharSets[9], 50*time.Millisecond)
+
+			if dryRun {
+				pipelineNames, application, err := d.Backend.GetPipelinesNamesAndApplication(pipeline)
+
+				if err != nil {
+					d.Logger.Error("could not get pipelines names and application from the configuration")
+					return err
+				}
+
+				color.Yellow(fmt.Sprintf("Application: %s", application))
+				color.Yellow(fmt.Sprintf("Pipelines to delete: %s", pipelineNames))
+				d.Logger.Info("Backend.GetPipelinesNamesAndApplication returned")
+				return nil
+			}
+
+			s.Writer = color.Error
+			s.Prefix = "Deleting spinnaker pipelines, please wait... "
+			s.Start()
+			fmt.Print("\n")
+			res, err := d.Backend.DeletePipeline(pipeline)
+			s.Stop()
 
 			if err != nil {
 				d.Logger.Warnf("Delete pipeline returned an error: %v", err)
