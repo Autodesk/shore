@@ -988,8 +988,8 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 		return &http.Response{}, err
 	}
 
-	color.Yellow(fmt.Sprintf("Application: %s", application))
-	color.Yellow(fmt.Sprintf("Pipelines to delete: %s", pipelineNames))
+	color.Yellow(fmt.Sprintf("\rApplication: %-40s ", application))
+	color.Yellow(fmt.Sprintf("Pipelines to delete: %s%-20s", pipelineNames, ""))
 
 	ch := make(chan DeletePipelineResponse, len(pipelineNames))
 	errCh := make(chan error)
@@ -1002,9 +1002,9 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 	for deletion := range ch {
 		deletions = append(deletions, deletion)
 	}
-
+	fmt.Printf("\r")
 	for _, d := range deletions {
-		color.Red(fmt.Sprintf("DELETED: %s - %s", d.App, d.Name))
+		color.Red(fmt.Sprintf("DELETED: %s - %-40s", d.App, d.Name))
 	}
 
 	if err != nil {
