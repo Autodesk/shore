@@ -3,18 +3,14 @@ package command
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/Autodesk/shore/pkg/config"
 	"github.com/Autodesk/shore/pkg/renderer"
-	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-// NewDeleteCommand - Using a Project, Renderer & Backend, renders and saves a pipeline.
+// NewDeleteCommand - Using a Project, Renderer & Backend, renders and deletes a pipeline and its nested pipelines.
 // Abstraction for different configuration languages (I.E. Jsonnet/HCL/CUELang)
 func NewDeleteCommand(d *Dependencies) *cobra.Command {
 	var renderVals string
@@ -37,7 +33,8 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 				return err
 			}
 
-			res, err := SpinnerWrapper(pipeline, dryRun, d.Backend.DeletePipeline)
+			// res, err := SpinnerWrapper(pipeline, dryRun, d.Backend.DeletePipeline)
+			res, err := d.Backend.DeletePipeline(pipeline, dryRun)
 
 			if err != nil {
 				d.Logger.Warnf("Delete pipeline returned an error: %v", err)
@@ -54,20 +51,4 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 	cmd.Flags().BoolVarP(&dryRun, "dry-run", "d", false, "list pipelines to be deleted - dry run")
 
 	return cmd
-}
-
-func SpinnerWrapper(pipeline string, dryRun bool, f func(string, bool) (*http.Response, error)) (*http.Response, error) {
-	s := spinner.New(spinner.CharSets[9], 1000*time.Millisecond)
-	if !dryRun {
-		s.Writer = color.Error
-		s.Suffix = " Deleting spinnaker pipelines, this may take a few moments (depending on Internet traffic!)\n"
-		s.Start()
-	}
-
-	res, err := f(pipeline, dryRun)
-
-	if !dryRun {
-		s.Stop()
-	}
-	return res, err
 }

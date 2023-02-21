@@ -1429,3 +1429,140 @@ func TestDeleteDryRunSuccess(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, res.StatusCode, http.StatusOK)
 }
+
+func TestGetNestedPipelinesNames(t *testing.T) {
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Child pipeline 2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2.2",
+								"type": "pipeline",
+								"stages": [
+									{
+										"name": "Child pipeline 2.2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+	expectedPipelineNames := []string{"Child pipeline 2", "Child pipeline 2.2", "Child pipeline 1"}
+
+	var pipeline map[string]interface{}
+
+	err := jsoniter.Unmarshal([]byte(nestedPipelineString), &pipeline)
+
+	stages := pipeline["stages"]
+	// Test
+	pipelineNames, err2 := cli.getNestedPipelinesNames(stages, pipeline)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Nil(t, err2)
+	assert.Equal(t, expectedPipelineNames, pipelineNames)
+}
+
+func TestGetPipelinesNames(t *testing.T) {
+	nestedPipelineString := `
+	{
+		"application": "appname",
+		"name":  "Nested pipeline",
+		"stages": [
+			{
+				"application": "appname",
+				"name":  "Nested pipeline stage",
+				"type": "pipeline",
+				"pipeline": {
+					"application": "appname",
+					"name": "Child pipeline 1",
+					"stages": [
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2",
+								"stages": [
+									{
+										"name": "Child pipeline 2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						},
+						{
+							"application": "appname",
+							"name":  "Child pipeline stage 2",
+							"type": "pipeline",
+							"pipeline": {
+								"application": "appname",
+								"name": "Child pipeline 2.2",
+								"type": "pipeline",
+								"stages": [
+									{
+										"name": "Child pipeline 2.2 stage",
+										"application": "appname",
+										"type": "pipeline"
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		]
+	}
+	`
+	expectedPipelineNames := []string{"Child pipeline 2", "Child pipeline 2.2", "Child pipeline 1", "Nested pipeline"}
+
+	var pipeline map[string]interface{}
+
+	err := jsoniter.Unmarshal([]byte(nestedPipelineString), &pipeline)
+
+	// Test
+	pipelineNames, err2 := cli.GetPipelinesNames(pipeline)
+
+	// Assert
+	assert.Nil(t, err)
+	assert.Nil(t, err2)
+	assert.Equal(t, expectedPipelineNames, pipelineNames)
+}
