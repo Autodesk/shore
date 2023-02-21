@@ -53,9 +53,6 @@ func NewDeleteCommand(d *Dependencies) *cobra.Command {
 			s := spinner.New(spinner.CharSets[9], 50*time.Millisecond)
 			s.Writer = color.Error
 			s.Prefix = "Deleting spinnaker pipelines, please wait... "
-			s.PostUpdate = func(s *spinner.Spinner) {
-				s.HideCursor = true
-			}
 			s.Start()
 			res, err := d.Backend.DeletePipeline(pipeline)
 			s.Stop()
