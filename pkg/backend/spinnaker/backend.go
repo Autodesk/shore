@@ -987,7 +987,7 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 	if err != nil {
 		return &http.Response{}, err
 	}
-
+	// here and bellow %-40s is to replace possible spinner suffix
 	color.Yellow(fmt.Sprintf("\rApplication: %-40s ", application))
 	color.Yellow(fmt.Sprintf("Pipelines to delete: %s%-20s", pipelineNames, ""))
 
