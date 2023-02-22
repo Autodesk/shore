@@ -923,8 +923,7 @@ func (s *SpinClient) getNestedPipelinesNames(stages interface{}, pipeline map[st
 	return pipelineNames, nil
 }
 
-// GetPipelinesNames - gets list of names of all pipelines configured
-func (s *SpinClient) GetPipelinesNames(pipeline map[string]interface{}) ([]string, error) {
+func (s *SpinClient) getPipelinesNames(pipeline map[string]interface{}) ([]string, error) {
 	pipelineNames := []string{}
 
 	if stages, exists := pipeline["stages"]; exists {
@@ -966,7 +965,7 @@ func (s *SpinClient) GetPipelinesNamesAndApplication(pipelineJSON string) ([]str
 
 	application := pipeline["application"].(string)
 
-	pipelineNames, err := s.GetPipelinesNames(pipeline)
+	pipelineNames, err := s.getPipelinesNames(pipeline)
 
 	if err != nil {
 		return []string{}, "", err
@@ -975,7 +974,7 @@ func (s *SpinClient) GetPipelinesNamesAndApplication(pipelineJSON string) ([]str
 	return pipelineNames, application, nil
 }
 
-// DeletePipeline - Deletes nested pipelines recursively
+// DeletePipeline - deletes rendered pipeline (recursively, if there are nested pipelines)
 func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error) {
 
 	if err := s.initializeAPI(); err != nil {
@@ -987,14 +986,14 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 	if err != nil {
 		return &http.Response{}, err
 	}
-	// here and bellow %-40s is to replace possible spinner suffix
+	// here and bellow %-40s hack is to replace possible spinner suffix interferring with the output
 	color.Yellow(fmt.Sprintf("\rApplication: %-40s ", application))
 	color.Yellow(fmt.Sprintf("Pipelines to delete: %s%-20s", pipelineNames, ""))
 
 	ch := make(chan DeletePipelineResponse, len(pipelineNames))
 	errCh := make(chan error)
 
-	go s.deletePipelines(application, pipelineNames, ch, errCh)
+	go s.DeletePipelines(application, pipelineNames, ch, errCh)
 	err = <-errCh
 
 	deletions := []DeletePipelineResponse{}
@@ -1017,7 +1016,10 @@ func (s *SpinClient) DeletePipeline(pipelineJSON string) (*http.Response, error)
 	}, nil
 }
 
-func (s *SpinClient) deletePipelines(application string, pipelineNames []string, ch chan DeletePipelineResponse, errCh chan error) {
+// DeletePipelines - asynchronously deletes pipelines list from the application provided as input.
+// Writes results to ch.
+// Error encountered is written to errCh and waits till all running in parallel deletion goroutines finish.
+func (s *SpinClient) DeletePipelines(application string, pipelineNames []string, ch chan DeletePipelineResponse, errCh chan error) {
 	if err := s.initializeAPI(); err != nil {
 		errCh <- err
 		return

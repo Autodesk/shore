@@ -1553,7 +1553,7 @@ func TestGetPipelinesNames(t *testing.T) {
 	err := jsoniter.Unmarshal([]byte(nestedPipelineString), &pipeline)
 
 	// Test
-	pipelineNames, err2 := cli.GetPipelinesNames(pipeline)
+	pipelineNames, err2 := cli.getPipelinesNames(pipeline)
 
 	// Assert
 	assert.Nil(t, err)
