@@ -48,6 +48,18 @@ func (p *MockPipelineControllerAPI) SavePipelineUsingPOST(ctx context.Context, p
 	return &http.Response{StatusCode: http.StatusOK, Body: body}, nil
 }
 
+func (p *MockPipelineControllerAPI) DeletePipelineUsingDELETE(ctx context.Context, application string, pipeline string) (*http.Response, error) {
+	data, err := jsoniter.Marshal(pipeline)
+
+	if err != nil {
+		return &http.Response{}, err
+	}
+
+	body := ioutil.NopCloser(bytes.NewReader(data))
+
+	return &http.Response{StatusCode: http.StatusOK, Body: body}, nil
+}
+
 func (p *MockPipelineControllerAPI) InvokePipelineConfigUsingPOST1(ctx context.Context, application string, pipelineNameOrID string, localVarOptionals *spinGateApi.PipelineControllerApiInvokePipelineConfigUsingPOST1Opts) (*http.Response, error) {
 	return &http.Response{StatusCode: http.StatusOK}, nil
 }
