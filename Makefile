@@ -42,3 +42,4 @@ release:
 
 clean:
 	rm -rf shore-* coverage_*.out
+
