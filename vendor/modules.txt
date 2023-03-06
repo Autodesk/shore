@@ -125,7 +125,7 @@ github.com/shopspring/decimal
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/test
-# github.com/spf13/afero v1.9.3
+# github.com/spf13/afero v1.9.4
 ## explicit; go 1.16
 github.com/spf13/afero
 github.com/spf13/afero/internal/common
