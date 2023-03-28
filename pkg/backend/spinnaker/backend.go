@@ -945,7 +945,20 @@ func (s *SpinClient) getPipelinesNames(pipeline map[string]interface{}) ([]strin
 	pipelineName := pipeline["name"].(string)
 	pipelineNames = append(pipelineNames, pipelineName)
 
-	return pipelineNames, nil
+	deduplicatedPipelineNames := func(pipelineNames []string) []string {
+		keys := make(map[string]bool)
+		list := []string{}
+
+		for _, entry := range pipelineNames {
+			if _, value := keys[entry]; !value {
+				keys[entry] = true
+				list = append(list, entry)
+			}
+		}
+		return list
+	}(pipelineNames)
+
+	return deduplicatedPipelineNames, nil
 }
 
 // GetPipelinesNamesAndApplication - gets list of names of all pipelines and application name configured
