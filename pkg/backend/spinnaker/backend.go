@@ -707,6 +707,11 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 			continue
 		}
 
+		stageTypeField, exists := stage["type"]
+		if !exists || stageTypeField != "pipeline" {
+			continue
+		}
+
 		switch stagePipelineField.(type) {
 		case string:
 			continue
@@ -878,6 +883,11 @@ func (s *SpinClient) getNestedPipelinesNames(stages interface{}, pipeline map[st
 		stage := stage.(map[string]interface{})
 		stagePipelineField, exists := stage["pipeline"]
 		if !exists {
+			continue
+		}
+
+		stageTypeField, exists := stage["type"]
+		if !exists || stageTypeField != "pipeline" {
 			continue
 		}
 
