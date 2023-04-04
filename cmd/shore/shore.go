@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Autodesk/shore/pkg/backend/spinnaker"
 	"github.com/Autodesk/shore/pkg/cleanup_command"
 	"github.com/Autodesk/shore/pkg/command"
 	"github.com/Autodesk/shore/pkg/project"
-	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -73,11 +71,10 @@ func init() {
 	fs := afero.NewOsFs()
 	logger = logrus.New()
 
-	commonDependencies := &command.Dependencies{
-		Project:  project.NewShoreProject(fs, logger),
-		Renderer: jsonnet.NewRenderer(fs, logger),
-		Backend:  spinnaker.NewClient(logger),
-		Logger:   logger,
+	commonDependencies, err := command.NewDependencies(project.NewShoreProject(fs, logger))
+	if err != nil {
+		logger.Error(err)
+		os.Exit(1)
 	}
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")
