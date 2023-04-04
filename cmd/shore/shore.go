@@ -71,6 +71,13 @@ func init() {
 	fs := afero.NewOsFs()
 	logger = logrus.New()
 
+	// TODO - Think about loading dependencies in PersistentPreRun
+	// Because NewDependencies calls on LoadShoreConfig which looks for render/exec/e2e YAML
+	// it will fail outside of a shore project - even if the user just tries to do
+	// `shore help`. If it's done in PersistentPreRun, then `shore help` can pass while the
+	// other commands can fail appropriatly - since they do need configs.
+	// This also means that we won't know which renderer/backend is used until just before
+	// it is ran.
 	commonDependencies, err := command.NewDependencies(project.NewShoreProject(fs, logger))
 	if err != nil {
 		logger.Error(err)
