@@ -26,10 +26,11 @@ const (
 
 // Dependencies - Shared dependencies all controller MAY require
 type Dependencies struct {
-	Renderer renderer.Renderer
-	Backend  backend.Backend
-	Logger   logrus.FieldLogger
-	Project  *project.Project
+	Renderer    renderer.Renderer
+	Backend     backend.Backend
+	Logger      logrus.FieldLogger
+	Project     *project.Project
+	ShoreConfig config.ShoreConfig
 }
 
 // NewDependencies - Creates a Dependencies struct.
@@ -61,9 +62,10 @@ func NewDependencies(p *project.Project) (*Dependencies, error) {
 	}
 
 	return &Dependencies{
-		Project:  p,
-		Renderer: chosenRenderer,
-		Backend:  chosenBackend,
-		Logger:   p.Log,
+		Project:     p,
+		Renderer:    chosenRenderer,
+		Backend:     chosenBackend,
+		Logger:      p.Log,
+		ShoreConfig: shoreConfig,
 	}, nil
 }
