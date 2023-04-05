@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Autodesk/shore/pkg/backend"
 	"github.com/Autodesk/shore/pkg/backend/spinnaker"
@@ -44,7 +45,7 @@ func (d *Dependencies) Load() error {
 	}
 
 	// Select the Renderer
-	switch shoreConfig.Renderer[`type`] {
+	switch strings.ToLower(shoreConfig.Renderer[`type`].(string)) {
 	case JSONNET:
 		d.Logger.Debug("Using the Jsonnet Renderer")
 		chosenRenderer = jsonnet.NewRenderer(d.Project.FS, d.Project.Log)
@@ -54,7 +55,7 @@ func (d *Dependencies) Load() error {
 	d.Renderer = chosenRenderer
 
 	// Select the Backend
-	switch shoreConfig.Executor[`type`] {
+	switch strings.ToLower(shoreConfig.Executor[`type`].(string)) {
 	case SPINNAKER:
 		d.Logger.Debug("Using the Spinnaker Backend")
 		chosenBackend = spinnaker.NewClient(d.Project.Log)

@@ -70,6 +70,13 @@ func TestPassingLoad(t *testing.T) {
 			expectedBackend:    &spinnaker.SpinClient{},
 			expectedRenderer:   &jsonnet.Jsonnet{},
 		},
+		{
+			name:               "insensetive-spinnaker/jsonnet",
+			configuredBackend:  "sPiNnAkEr",
+			configuredRenderer: "JsOnNeT",
+			expectedBackend:    &spinnaker.SpinClient{},
+			expectedRenderer:   &jsonnet.Jsonnet{},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
