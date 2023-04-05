@@ -29,22 +29,25 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Version:       version,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		logLevel := logrus.WarnLevel + logrus.Level(logVerbosity)
 		logger.SetLevel(logLevel)
 		logger.SetFormatter(&logrus.TextFormatter{})
 
 		if cmd.Name() == "help" {
-			return // No need to do anything, just printing help
+			return nil // No need to do anything, just printing help
 		}
 
-		commonDependencies.Load()
+		if err := commonDependencies.Load(); err != nil {
+			return err
+		}
 
 		profileName := GetProfileName(cmd)
 		ExecConfigName := GetExecutorConfigName(cmd)
 
 		logger.Debug("Profile set to - ", profileName)
 		logger.Debug("Executor configuration set to - ", ExecConfigName)
+		return nil
 	},
 }
 
