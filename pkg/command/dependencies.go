@@ -34,7 +34,7 @@ type Dependencies struct {
 	ShoreConfig config.ShoreConfig
 }
 
-// NewDependencies - Creates a Dependencies struct.
+// Load - loads the shore config and sets the renderer and backend
 func (d *Dependencies) Load() error {
 	var chosenRenderer renderer.Renderer
 	var chosenBackend backend.Backend
