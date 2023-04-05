@@ -1,11 +1,17 @@
 package command
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"testing"
 
+	"github.com/Autodesk/shore/pkg/backend/spinnaker"
 	"github.com/Autodesk/shore/pkg/project"
+	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 var testPath = "/test"
@@ -31,7 +37,7 @@ var shoreConfigTemplate = `{
 	}
 }`
 
-func SetupTestProject() *project.Project {
+func SetupTestDependencies() *Dependencies {
 	os.Setenv("LOCAL", "true")
 	os.Setenv("SHORE_PROJECT_PATH", testPath)
 
@@ -40,12 +46,15 @@ func SetupTestProject() *project.Project {
 
 	logger, _ := test.NewNullLogger()
 
-	return project.NewShoreProject(memFs, logger)
+	return &Dependencies{
+		Project: project.NewShoreProject(memFs, logger),
+		Logger:  logger,
+	}
 }
 
-/*func TestPassingNewDependencies(t *testing.T) {
+func TestPassingLoad(t *testing.T) {
 	// Given
-	proj := SetupTestProject()
+	deps := SetupTestDependencies()
 
 	tests := []struct {
 		name               string
@@ -65,10 +74,10 @@ func SetupTestProject() *project.Project {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			shoreConfig := fmt.Sprintf(shoreConfigTemplate, test.configuredRenderer, test.configuredBackend)
-			afero.WriteFile(proj.FS, path.Join(testPath, "shore.json"), []byte(shoreConfig), os.ModePerm)
+			afero.WriteFile(deps.Project.FS, path.Join(testPath, "shore.json"), []byte(shoreConfig), os.ModePerm)
 
 			// When
-			deps, err := NewDependencies(proj)
+			err := deps.Load()
 
 			// Then
 			assert.NoError(t, err)
@@ -78,9 +87,9 @@ func SetupTestProject() *project.Project {
 	}
 }
 
-func TestFailingNewDependencies(t *testing.T) {
+func TestFailingLoad(t *testing.T) {
 	// Given
-	proj := SetupTestProject()
+	deps := SetupTestDependencies()
 
 	tests := []struct {
 		name               string
@@ -110,15 +119,14 @@ func TestFailingNewDependencies(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			shoreConfig := fmt.Sprintf(shoreConfigTemplate, test.configuredRenderer, test.configuredBackend)
-			afero.WriteFile(proj.FS, path.Join(testPath, "shore.json"), []byte(shoreConfig), os.ModePerm)
+			afero.WriteFile(deps.Project.FS, path.Join(testPath, "shore.json"), []byte(shoreConfig), os.ModePerm)
 
 			// When
-			deps, err := NewDependencies(proj)
+			err := deps.Load()
 
 			// Then
-			assert.Empty(t, deps)
 			assert.Error(t, err)
 			assert.ErrorContains(t, err, test.expectedError)
 		})
 	}
-}*/
+}
