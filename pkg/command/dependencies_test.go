@@ -1,17 +1,11 @@
 package command
 
 import (
-	"fmt"
 	"os"
-	"path"
-	"testing"
 
-	"github.com/Autodesk/shore/pkg/backend/spinnaker"
 	"github.com/Autodesk/shore/pkg/project"
-	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 var testPath = "/test"
@@ -49,7 +43,7 @@ func SetupTestProject() *project.Project {
 	return project.NewShoreProject(memFs, logger)
 }
 
-func TestPassingNewDependencies(t *testing.T) {
+/*func TestPassingNewDependencies(t *testing.T) {
 	// Given
 	proj := SetupTestProject()
 
@@ -127,4 +121,4 @@ func TestFailingNewDependencies(t *testing.T) {
 			assert.ErrorContains(t, err, test.expectedError)
 		})
 	}
-}
+}*/

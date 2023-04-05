@@ -34,38 +34,34 @@ type Dependencies struct {
 }
 
 // NewDependencies - Creates a Dependencies struct.
-func NewDependencies(p *project.Project) (*Dependencies, error) {
+func (d *Dependencies) Load() error {
 	var chosenRenderer renderer.Renderer
 	var chosenBackend backend.Backend
 
-	shoreConfig, err := config.LoadShoreConfig(p)
+	shoreConfig, err := config.LoadShoreConfig(d.Project)
 	if err != nil {
-		return &Dependencies{}, err
+		return err
 	}
 
 	// Select the Renderer
 	switch shoreConfig.Renderer[`type`] {
 	case JSONNET:
-		p.Log.Debug("Using the Jsonnet Renderer")
-		chosenRenderer = jsonnet.NewRenderer(p.FS, p.Log)
+		d.Logger.Debug("Using the Jsonnet Renderer")
+		chosenRenderer = jsonnet.NewRenderer(d.Project.FS, d.Project.Log)
 	default:
-		return &Dependencies{}, fmt.Errorf("the following Renderer is undefined: %s", shoreConfig.Renderer[`type`].(string))
+		return fmt.Errorf("the following Renderer is undefined: %s", shoreConfig.Renderer[`type`].(string))
 	}
+	d.Renderer = chosenRenderer
 
 	// Select the Backend
 	switch shoreConfig.Executor[`type`] {
 	case SPINNAKER:
-		p.Log.Debug("Using the Spinnaker Backend")
-		chosenBackend = spinnaker.NewClient(p.Log)
+		d.Logger.Debug("Using the Spinnaker Backend")
+		chosenBackend = spinnaker.NewClient(d.Project.Log)
 	default:
-		return &Dependencies{}, fmt.Errorf("the following Backend is undefined: %s", shoreConfig.Executor[`type`].(string))
+		return fmt.Errorf("the following Backend is undefined: %s", shoreConfig.Executor[`type`].(string))
 	}
+	d.Backend = chosenBackend
 
-	return &Dependencies{
-		Project:     p,
-		Renderer:    chosenRenderer,
-		Backend:     chosenBackend,
-		Logger:      p.Log,
-		ShoreConfig: shoreConfig,
-	}, nil
+	return nil
 }

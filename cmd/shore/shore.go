@@ -20,6 +20,8 @@ var version = "local"
 var logVerbosity int
 var logger *logrus.Logger
 
+var commonDependencies *command.Dependencies
+
 var rootCmd = &cobra.Command{
 	Use:           "shore",
 	Short:         "Shore - Pipeline Framework",
@@ -31,6 +33,12 @@ var rootCmd = &cobra.Command{
 		logLevel := logrus.WarnLevel + logrus.Level(logVerbosity)
 		logger.SetLevel(logLevel)
 		logger.SetFormatter(&logrus.TextFormatter{})
+
+		if cmd.Name() == "help" {
+			return // No need to do anything, just printing help
+		}
+
+		commonDependencies.Load()
 
 		profileName := GetProfileName(cmd)
 		ExecConfigName := GetExecutorConfigName(cmd)
@@ -71,17 +79,9 @@ func init() {
 	fs := afero.NewOsFs()
 	logger = logrus.New()
 
-	// TODO - Think about loading dependencies in PersistentPreRun
-	// Because NewDependencies calls on LoadShoreConfig which looks for render/exec/e2e YAML
-	// it will fail outside of a shore project - even if the user just tries to do
-	// `shore help`. If it's done in PersistentPreRun, then `shore help` can pass while the
-	// other commands can fail appropriatly - since they do need configs.
-	// This also means that we won't know which renderer/backend is used until just before
-	// it is ran.
-	commonDependencies, err := command.NewDependencies(project.NewShoreProject(fs, logger))
-	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+	commonDependencies = &command.Dependencies{
+		Project: project.NewShoreProject(fs, logger),
+		Logger:  logger,
 	}
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")
