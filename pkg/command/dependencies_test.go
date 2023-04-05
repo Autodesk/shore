@@ -108,7 +108,7 @@ func TestFailingLoad(t *testing.T) {
 			name:               "wrong-backend",
 			configuredBackend:  "yolo",
 			configuredRenderer: "jsonnet",
-			expectedError:      "Backend is undefined",
+			expectedError:      "Executor is undefined",
 		},
 		{
 			name:               "wrong-renderer",
