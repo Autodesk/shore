@@ -60,7 +60,7 @@ func (d *Dependencies) Load() error {
 		d.Logger.Debug("Using the Spinnaker Backend")
 		chosenBackend = spinnaker.NewClient(d.Project.Log)
 	default:
-		return fmt.Errorf("the following Backend is undefined: %s", shoreConfig.Executor[`type`].(string))
+		return fmt.Errorf("the following Executor is undefined: %s", shoreConfig.Executor[`type`].(string))
 	}
 	d.Backend = chosenBackend
 
