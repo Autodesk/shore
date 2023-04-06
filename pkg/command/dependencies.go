@@ -36,7 +36,7 @@ type Dependencies struct {
 }
 
 // Load - loads the shore config and sets the renderer and backend
-func (d *Dependencies) Load() error {
+func (d *Dependencies) Load(profileName, execConfigName string) error {
 	var chosenRenderer renderer.Renderer
 	var chosenBackend backend.Backend
 
@@ -45,6 +45,11 @@ func (d *Dependencies) Load() error {
 		return err
 	}
 	d.ShoreConfig = shoreConfig
+
+	d.ShoreConfigOpts = config.ShoreConfigOpts{
+		ProfileName:        profileName,
+		ExecutorConfigName: execConfigName,
+	}
 
 	// Select the Renderer
 	switch strings.ToLower(shoreConfig.Renderer[`type`].(string)) {

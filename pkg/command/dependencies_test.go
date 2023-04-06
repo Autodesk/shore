@@ -89,13 +89,14 @@ func TestPassingLoad(t *testing.T) {
 			afero.WriteFile(deps.Project.FS, path.Join(testPath, "shore.json"), []byte(shoreConfig), os.ModePerm)
 
 			// When
-			err := deps.Load()
+			err := deps.Load("default", "default")
 
 			// Then
 			assert.NoError(t, err)
 			assert.IsType(t, test.expectedRenderer, deps.Renderer)
 			assert.IsType(t, test.expectedBackend, deps.Backend)
 			assert.NotEmpty(t, deps.ShoreConfig)
+			assert.NotEmpty(t, deps.ShoreConfigOpts)
 		})
 	}
 }
@@ -135,7 +136,7 @@ func TestFailingLoad(t *testing.T) {
 			afero.WriteFile(deps.Project.FS, path.Join(testPath, "shore.json"), []byte(shoreConfig), os.ModePerm)
 
 			// When
-			err := deps.Load()
+			err := deps.Load("default", "default")
 
 			// Then
 			assert.Error(t, err)
