@@ -181,3 +181,16 @@ func LoadConfig(p *project.Project, flag string, fileName string) ([]byte, error
 	}
 	return configData, nil
 }
+
+// GetExecutorConfig - Gets the executor config out of the Shore Config given the executor config name.
+func (s *ShoreConfig) GetExecutorConfig(execConfigName string) interface{} {
+	if s.Executor[`config`] == nil {
+		println("no config")
+		return nil
+	}
+	if execConfig := s.Executor[`config`].(map[string]interface{})[execConfigName]; execConfig != nil {
+		println("no exec name config")
+		return execConfig
+	}
+	return nil
+}
