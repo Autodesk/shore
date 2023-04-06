@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Autodesk/shore/pkg/backend/spinnaker"
+	"github.com/Autodesk/shore/pkg/config"
 	"github.com/Autodesk/shore/pkg/project"
 	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -49,6 +50,10 @@ func SetupTestDependencies() *Dependencies {
 	return &Dependencies{
 		Project: project.NewShoreProject(memFs, logger),
 		Logger:  logger,
+		ShoreConfigOpts: config.ShoreConfigOpts{
+			ProfileName:        "default",
+			ExecutorConfigName: "default",
+		},
 	}
 }
 
@@ -90,6 +95,7 @@ func TestPassingLoad(t *testing.T) {
 			assert.NoError(t, err)
 			assert.IsType(t, test.expectedRenderer, deps.Renderer)
 			assert.IsType(t, test.expectedBackend, deps.Backend)
+			assert.NotEmpty(t, deps.ShoreConfig)
 		})
 	}
 }

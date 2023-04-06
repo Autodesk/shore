@@ -44,6 +44,7 @@ func (d *Dependencies) Load() error {
 	if err != nil {
 		return err
 	}
+	d.ShoreConfig = shoreConfig
 
 	// Select the Renderer
 	switch strings.ToLower(shoreConfig.Renderer[`type`].(string)) {
