@@ -31,6 +31,7 @@ import (
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
 	spinConfig "github.com/spinnaker/spin/config"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
+	spinVersion "github.com/spinnaker/spin/version"
 	"gopkg.in/yaml.v2"
 )
 
@@ -113,6 +114,7 @@ func (s *SpinClient) makeGateClient() (*spinGate.GatewayClient, error) {
 			return nil, err
 		}
 	case interface{}, map[interface{}]interface{}:
+		s.log.Debug("The given executor config is an object")
 		var err error
 		if loadedConfig, err = yaml.Marshal(gateConfig); err != nil {
 			return nil, err
@@ -147,11 +149,18 @@ func (s *SpinClient) initializeAPI() error {
 			// `InitializeHTTPClient` is an internal Spinnaker function that takes the auth config from a `.config` file used by spin-cli.
 			// The returned `httpClient` is already configured to use `LDAP/OAuth2/Certificates` and the other authentication methods provided by spinnaker.
 			httpClient, err := spinGate.InitializeHTTPClient(gateClient.Config.Auth)
-
 			if err != nil {
 				outerErr = err
 				return
 			}
+
+			cfg := &spinGateApi.Configuration{
+				BasePath:      gateClient.GateEndpoint(),
+				DefaultHeader: make(map[string]string),
+				UserAgent:     fmt.Sprintf("%s/%s", spinVersion.UserAgent, spinVersion.String()),
+				HTTPClient:    httpClient,
+			}
+			gateClient.APIClient = spinGateApi.NewAPIClient(cfg)
 
 			s.CustomSpinCLI = &CustomSpinClient{Endpoint: gateClient.Config.Gate.Endpoint, HTTPClient: httpClient}
 			s.SpinCLI = &SpinCLI{
@@ -281,12 +290,12 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 			return pipelineID, nil, wrappedErr
 		}
 
-		s.log.Info("Pipeline %q not found in application %q", pipelineName, application)
+		s.log.Infof("Pipeline %q not found in application %q", pipelineName, application)
 	}
 
 	// pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
 	if len(foundPipeline) > 0 {
-		s.log.Info("Pipeline %q found with ID %q", foundPipeline["name"], foundPipeline["id"], application)
+		s.log.Infof("Pipeline %q found with ID %q in application %q", foundPipeline["name"], foundPipeline["id"], application)
 
 		pipeline["id"] = foundPipeline["id"].(string)
 		pipelineID = foundPipeline["id"].(string)
