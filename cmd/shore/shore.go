@@ -6,6 +6,7 @@ import (
 
 	"github.com/Autodesk/shore/pkg/cleanup_command"
 	"github.com/Autodesk/shore/pkg/command"
+	"github.com/Autodesk/shore/pkg/config"
 	"github.com/Autodesk/shore/pkg/project"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -42,11 +43,11 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		profileName := GetProfileName(cmd)
-		ExecConfigName := GetExecutorConfigName(cmd)
+		commonDependencies.ShoreConfigOpts.ProfileName = GetProfileName(cmd)
+		commonDependencies.ShoreConfigOpts.ExecutorConfigName = GetExecutorConfigName(cmd)
 
-		logger.Debug("Profile set to - ", profileName)
-		logger.Debug("Executor configuration set to - ", ExecConfigName)
+		logger.Debug("Profile set to - ", commonDependencies.ShoreConfigOpts.ProfileName)
+		logger.Debug("Executor configuration set to - ", commonDependencies.ShoreConfigOpts.ExecutorConfigName)
 		return nil
 	},
 }
@@ -85,6 +86,10 @@ func init() {
 	commonDependencies = &command.Dependencies{
 		Project: project.NewShoreProject(fs, logger),
 		Logger:  logger,
+		ShoreConfigOpts: config.ShoreConfigOpts{
+			ProfileName:        "default",
+			ExecutorConfigName: "default",
+		},
 	}
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")

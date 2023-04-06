@@ -27,11 +27,12 @@ const (
 
 // Dependencies - Shared dependencies all controller MAY require
 type Dependencies struct {
-	Renderer    renderer.Renderer
-	Backend     backend.Backend
-	Logger      logrus.FieldLogger
-	Project     *project.Project
-	ShoreConfig config.ShoreConfig
+	Renderer        renderer.Renderer
+	Backend         backend.Backend
+	Logger          logrus.FieldLogger
+	Project         *project.Project
+	ShoreConfig     config.ShoreConfig
+	ShoreConfigOpts config.ShoreConfigOpts
 }
 
 // Load - loads the shore config and sets the renderer and backend

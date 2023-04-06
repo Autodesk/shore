@@ -21,6 +21,12 @@ type ShoreConfig struct {
 	Profiles map[string]interface{} `json:"profiles"`
 }
 
+// ShoreConfigOpts - A struct presenting the options sets for the Shore Config.
+type ShoreConfigOpts struct {
+	ProfileName        string
+	ExecutorConfigName string
+}
+
 // ProfileMetaData - Metadata for a given profile.
 type ProfileMetaData struct {
 	Application string
