@@ -12,9 +12,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -27,7 +29,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	spinGate "github.com/spinnaker/spin/cmd/gateclient"
+	spinConfig "github.com/spinnaker/spin/config"
 	spinGateApi "github.com/spinnaker/spin/gateapi"
+	"gopkg.in/yaml.v2"
 )
 
 const defaultTestTimeout = 1200 // 20 minutes in seconds
@@ -92,6 +96,40 @@ func NewClient(executorConfig interface{}, logger logrus.FieldLogger) *SpinClien
 	return &SpinClient{log: logger, gateConfig: executorConfig}
 }
 
+// makeGateClient - Makes a Gate API Client based on either a file config or a config object.
+func (s *SpinClient) makeGateClient() (*spinGate.GatewayClient, error) {
+	var loadedConfig []byte
+
+	switch gateConfig := s.gateConfig.(type) {
+
+	case string:
+		s.log.Debug("The given executor config is a path")
+		if _, err := os.Stat(gateConfig); os.IsNotExist(err) {
+			return nil, fmt.Errorf("the executor config with the path [%s] does not exist", gateConfig)
+		}
+
+		var err error
+		if loadedConfig, err = ioutil.ReadFile(gateConfig); err != nil {
+			return nil, err
+		}
+	case interface{}, map[interface{}]interface{}:
+		var err error
+		if loadedConfig, err = yaml.Marshal(gateConfig); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("the provided executor config from the shore config could not be used")
+	}
+
+	var spinconfig spinConfig.Config
+	err := yaml.Unmarshal(loadedConfig, &spinconfig)
+
+	return &spinGate.GatewayClient{
+		Context: context.Background(),
+		Config:  spinconfig,
+	}, err
+}
+
 // initializeAPI - Lazy initialization of the client, is expected to be called before each method that requires http.
 // Concept taken from: https://roberto.selbach.ca/zero-values-in-go-and-lazy-initialization/
 func (s *SpinClient) initializeAPI() error {
@@ -99,7 +137,7 @@ func (s *SpinClient) initializeAPI() error {
 	// If the client is already initialized, not
 	if s.SpinCLI == nil && s.CustomSpinCLI == nil {
 		s.initOnce.Do(func() {
-			gateClient, err := spinGate.NewGateClient(&UI{}, "", "", "", false)
+			gateClient, err := s.makeGateClient()
 
 			if err != nil {
 				outerErr = err
