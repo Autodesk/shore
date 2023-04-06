@@ -23,7 +23,7 @@ func SetupTest(t *testing.T, f func(*testing.T, *command.Dependencies)) {
 	memFs.Mkdir(testPath, os.ModePerm)
 
 	logger, _ := test.NewNullLogger()
-	s := spinnaker.NewClient(logger)
+	s := spinnaker.NewClient(nil, logger)
 	s.CustomSpinCLI = &spinnaker.MockCustomSpinCli{}
 	s.SpinCLI = &spinnaker.SpinCLI{
 		ApplicationControllerAPI: &spinnaker.MockApplicationControllerAPI{},

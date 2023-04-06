@@ -61,11 +61,13 @@ func (d *Dependencies) Load(profileName, execConfigName string) error {
 	}
 	d.Renderer = chosenRenderer
 
+	execConfig := shoreConfig.GetExecutorConfig(execConfigName)
+
 	// Select the Backend
 	switch strings.ToLower(shoreConfig.Executor[`type`].(string)) {
 	case SPINNAKER:
 		d.Logger.Debug("Using the Spinnaker Backend")
-		chosenBackend = spinnaker.NewClient(d.Project.Log)
+		chosenBackend = spinnaker.NewClient(execConfig, d.Project.Log)
 	default:
 		return fmt.Errorf("the following Executor is undefined: %s", shoreConfig.Executor[`type`].(string))
 	}

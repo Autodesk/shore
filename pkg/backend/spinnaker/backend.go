@@ -64,6 +64,8 @@ type SpinClient struct {
 	*SpinCLI
 	CustomSpinCLI
 	log logrus.FieldLogger
+	// Could be a map or a string - comes from Shore config, "executor.config" attribute.
+	gateConfig interface{}
 }
 
 func (s *SpinClient) GetPipeline(application string, pipelineName string) (map[string]interface{}, *http.Response, error) {
@@ -86,8 +88,8 @@ func (s *SpinClient) GetPipeline(application string, pipelineName string) (map[s
 }
 
 // NewClient - Create a new default spinnaker client
-func NewClient(logger logrus.FieldLogger) *SpinClient {
-	return &SpinClient{log: logger}
+func NewClient(executorConfig interface{}, logger logrus.FieldLogger) *SpinClient {
+	return &SpinClient{log: logger, gateConfig: executorConfig}
 }
 
 // initializeAPI - Lazy initialization of the client, is expected to be called before each method that requires http.
