@@ -37,41 +37,46 @@ type Dependencies struct {
 
 // Load - loads the shore config and sets the renderer and backend
 func (d *Dependencies) Load(profileName, execConfigName string) error {
-	var chosenRenderer renderer.Renderer
-	var chosenBackend backend.Backend
-
-	shoreConfig, err := config.LoadShoreConfig(d.Project)
-	if err != nil {
-		return err
-	}
-	d.ShoreConfig = shoreConfig
-
 	d.ShoreConfigOpts = config.ShoreConfigOpts{
 		ProfileName:        profileName,
 		ExecutorConfigName: execConfigName,
 	}
 
-	// Select the Renderer
+	var err error
+	d.ShoreConfig, err = config.LoadShoreConfig(d.Project)
+	if err != nil {
+		return err
+	}
+
+	d.Renderer, err = d.initRenderer(d.ShoreConfig)
+	if err != nil {
+		return err
+	}
+
+	d.Backend, err = d.initBackend(d.ShoreConfig)
+	return err
+}
+
+// initRenderer initializes the Renderer based on the shore config
+func (d *Dependencies) initRenderer(shoreConfig config.ShoreConfig) (renderer.Renderer, error) {
 	switch strings.ToLower(shoreConfig.Renderer[`type`].(string)) {
 	case JSONNET:
 		d.Logger.Debug("Using the Jsonnet Renderer")
-		chosenRenderer = jsonnet.NewRenderer(d.Project.FS, d.Project.Log)
+		return jsonnet.NewRenderer(d.Project.FS, d.Project.Log), nil
 	default:
-		return fmt.Errorf("the following Renderer is undefined: %s", shoreConfig.Renderer[`type`].(string))
+		return nil, fmt.Errorf("the following Renderer is undefined: %s", shoreConfig.Renderer[`type`].(string))
 	}
-	d.Renderer = chosenRenderer
+}
 
-	execConfig := shoreConfig.GetExecutorConfig(execConfigName)
+// initRenderer initializes the Backend based on the shore config
+func (d *Dependencies) initBackend(shoreConfig config.ShoreConfig) (backend.Backend, error) {
+	execConfig := shoreConfig.GetExecutorConfig(d.ShoreConfigOpts.ExecutorConfigName)
 
-	// Select the Backend
 	switch strings.ToLower(shoreConfig.Executor[`type`].(string)) {
 	case SPINNAKER:
 		d.Logger.Debug("Using the Spinnaker Backend")
-		chosenBackend = spinnaker.NewClient(execConfig, d.Project.Log)
+		return spinnaker.NewClient(execConfig, d.Project.Log), nil
 	default:
-		return fmt.Errorf("the following Executor is undefined: %s", shoreConfig.Executor[`type`].(string))
+		return nil, fmt.Errorf("the following Executor is undefined: %s", shoreConfig.Executor[`type`].(string))
 	}
-	d.Backend = chosenBackend
-
-	return nil
 }
