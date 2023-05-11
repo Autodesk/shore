@@ -26,7 +26,7 @@ func NewDiffCommand(d *Dependencies) *cobra.Command {
 		Long:  `Shows difference between current and desired state of the pipeline.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			settingsBytes, err := config.LoadConfig(d.Project, "render", renderValues)
+			settingsBytes, err := config.LoadConfig(d.Project, renderValues, "render")
 
 			var confErr *config.ConfigurationErr
 
