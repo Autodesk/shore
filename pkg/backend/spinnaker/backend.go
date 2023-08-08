@@ -748,7 +748,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 			for _, stage := range childPipelineStages.([]interface{}) {
 				innerStage := stage.(map[string]interface{})
 
-				if !hasChildPipelines && mapContainsKey(innerStage, "application") && mapContainsKey(innerStage, "pipeline") && reflect.TypeOf(innerStage["pipeline"]).Kind() == reflect.String {
+				if mapContainsKey(innerStage, "application") && mapContainsKey(innerStage, "pipeline") && reflect.TypeOf(innerStage["pipeline"]).Kind() == reflect.String {
 					if response, result := s.findAndReplacePipelineNameWithFoundID(innerStage); response {
 						stage = result
 					}
