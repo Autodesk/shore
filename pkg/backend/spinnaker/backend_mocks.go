@@ -29,7 +29,8 @@ func (a *MockApplicationControllerAPI) GetPipelineConfigUsingGET(ctx context.Con
 		res = map[string]interface{}{}
 	} else {
 		res = map[string]interface{}{
-			"id": "1234",
+			"name": pipelineName,
+			"id":   "1234",
 		}
 	}
 

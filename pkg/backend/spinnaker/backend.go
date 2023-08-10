@@ -249,12 +249,12 @@ func (s *SpinClient) savePipeline(pipelineJSON string) (string, *http.Response, 
 			return pipelineID, nil, wrappedErr
 		}
 
-		s.log.Info("Pipeline %q not found in application %q", pipelineName, application)
+		s.log.Infof("Pipeline %q not found in application %q", pipelineName, application)
 	}
 
 	// pipeline found, let's use Spinnaker's known Pipeline ID, otherwise we'll get one created for us
 	if len(foundPipeline) > 0 {
-		s.log.Info("Pipeline %q found with ID %q", foundPipeline["name"], foundPipeline["id"], application)
+		s.log.Infof("Pipeline %q found with ID %q in application %q", foundPipeline["name"], foundPipeline["id"], application)
 
 		pipeline["id"] = foundPipeline["id"].(string)
 		pipelineID = foundPipeline["id"].(string)
@@ -748,7 +748,7 @@ func (s *SpinClient) saveNestedPipeline(stages interface{}, pipeline map[string]
 			for _, stage := range childPipelineStages.([]interface{}) {
 				innerStage := stage.(map[string]interface{})
 
-				if !hasChildPipelines && mapContainsKey(innerStage, "application") && mapContainsKey(innerStage, "pipeline") && reflect.TypeOf(innerStage["pipeline"]).Kind() == reflect.String {
+				if mapContainsKey(innerStage, "application") && mapContainsKey(innerStage, "pipeline") && reflect.TypeOf(innerStage["pipeline"]).Kind() == reflect.String {
 					if response, result := s.findAndReplacePipelineNameWithFoundID(innerStage); response {
 						stage = result
 					}
