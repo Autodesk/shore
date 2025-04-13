@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Autodesk/shore/pkg/backend"
+	"github.com/Autodesk/shore/pkg/backend/k8sbackend"
 	"github.com/Autodesk/shore/pkg/backend/spinnaker"
 	"github.com/Autodesk/shore/pkg/cleanup_command"
 	"github.com/Autodesk/shore/pkg/command"
 	"github.com/Autodesk/shore/pkg/project"
+	"github.com/Autodesk/shore/pkg/renderer"
 	"github.com/Autodesk/shore/pkg/renderer/jsonnet"
+	"github.com/Autodesk/shore/pkg/renderer/k8srender"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -21,6 +25,11 @@ var version = "local"
 
 var logVerbosity int
 var logger *logrus.Logger
+var rendererInstance renderer.Renderer
+var backendInstance backend.Backend
+
+var commonDependencies *command.Dependencies
+var fs afero.Fs = afero.NewOsFs()
 
 var rootCmd = &cobra.Command{
 	Use:           "shore",
@@ -36,6 +45,31 @@ var rootCmd = &cobra.Command{
 
 		profileName := GetProfileName(cmd)
 		ExecConfigName := GetExecutorConfigName(cmd)
+
+		// Check if the command is "render"
+		rendererType := GetRendererType(cmd)
+
+		// Initialize the Renderer based on the flag
+		if rendererType == "k" {
+			logger.Infof("Using Kubernetes Renderer (k8srender)")
+			rendererInstance = k8srender.NewRenderer(fs, logger)
+		} else {
+			logger.Infof("Using Jsonnet Renderer (jsonnet)")
+			rendererInstance = jsonnet.NewRenderer(fs, logger)
+		}
+		// Use executorType for other commands
+		executorType := GetExecutorType(cmd)
+		if executorType == "d" {
+			logger.Infof("Using Kubernetes Backend (k8sbackend)")
+			backendInstance = k8sbackend.NewClient(logger)
+		} else {
+			logger.Infof("Using Spinnaker Backend (spinnaker)")
+			backendInstance = spinnaker.NewClient(logger)
+		}
+
+		// Pass the rendererInstance to commonDependencies
+		commonDependencies.Renderer = rendererInstance
+		commonDependencies.Backend = backendInstance
 
 		logger.Debug("Profile set to - ", profileName)
 		logger.Debug("Executor configuration set to - ", ExecConfigName)
@@ -67,18 +101,19 @@ func getConfigName(cmd *cobra.Command, flagName string, envVar string) string {
 	return configName
 }
 
+func GetRendererType(cmd *cobra.Command) string {
+	return getConfigName(cmd, "renderer", "SHORE_RENDERER")
+}
+
+func GetExecutorType(cmd *cobra.Command) string {
+	return getConfigName(cmd, "executor", "SHORE_EXECUTOR")
+}
+
 func init() {
 	// TODO: Add global validations to init.
 	// cobra.OnInitialize()
 	fs := afero.NewOsFs()
 	logger = logrus.New()
-
-	commonDependencies := &command.Dependencies{
-		Project:  project.NewShoreProject(fs, logger),
-		Renderer: jsonnet.NewRenderer(fs, logger),
-		Backend:  spinnaker.NewClient(logger),
-		Logger:   logger,
-	}
 
 	rootCmd.PersistentFlags().CountVarP(&logVerbosity, "verbose", "v", "Logging verbosity")
 	// "default" should not be set explicitly on the command - it will be set in getConfigName.
@@ -87,6 +122,17 @@ func init() {
 	//'p' is used for 'payload' used by exec command. 'l' for load profile?
 	rootCmd.PersistentFlags().StringP("profile", "P", os.Getenv("SHORE_PROFILE"),
 		"The profile to use. Can also be set by $SHORE_PROFILE environment variable. Priority is: env variable, cli args, default.")
+	rootCmd.PersistentFlags().StringP("renderer", "k", os.Getenv("SHORE_RENDERER"),
+		"Which render to use (eg. k for k8s, jsonnet). Can also be set by $SHORE_RENDERER environment variable. Priority is: env variable, cli args, default.")
+	rootCmd.PersistentFlags().StringP("executor", "e", os.Getenv("SHORE_EXECUTOR"),
+		"Which executor to use (eg. spinnaker, d for k8sbackend). Can also be set by $SHORE_EXECUTOR environment variable. Priority is: env variable, cli args, default.")
+
+	commonDependencies = &command.Dependencies{
+		Project:  project.NewShoreProject(fs, logger),
+		Renderer: nil,
+		Backend:  nil,
+		Logger:   logger,
+	}
 
 	rootCmd.AddCommand(command.NewProjectCommand(commonDependencies))
 	rootCmd.AddCommand(command.NewRenderCommand(commonDependencies))
